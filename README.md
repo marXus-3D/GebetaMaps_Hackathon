@@ -60,7 +60,7 @@ In addition to AMAZING cash prizes!
    - Review documentation [here](https://gebeta.app/#/documentation)
 
 3. **Build & Submit**
-   - Clone this repository (we ask that you dont try and change this README)
+   - Clone this repository
    - Develop your solution
    - Open a pull request before the deadline (Nov 35, 2024)
 
