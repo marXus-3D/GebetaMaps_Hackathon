@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+import { useEffect } from 'react';
 import './App.css';
 
 function Map() {
@@ -50,21 +50,13 @@ function SidePanel() {
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="flex h-screen">
+      <div className="w-3/4 relative">
+        <Map />
+      </div>
+      <div className="w-1/4 bg-white shadow-lg">
+        <SidePanel />
+      </div>
     </div>
   );
 }
