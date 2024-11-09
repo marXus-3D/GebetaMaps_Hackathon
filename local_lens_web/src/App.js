@@ -1,28 +1,8 @@
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
-
-function Map() {
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.7.1/dist/leaflet.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
-      const L = window.L;
-      const map = L.map('map').setView([51.505, -0.09], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  return <div id="map" className="w-full h-full"></div>;
-}
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 function SidePanel() {
   const placeholderPlaces = [
@@ -48,11 +28,35 @@ function SidePanel() {
   );
 }
 
+// Set a default position (latitude, longitude)
+const position = [9.03, 38.74]; // Coordinates for London, UK
+
+const MapComponent = () => {
+  return (
+    <div className="w-full h-full">
+      {/* MapContainer is the wrapper for your map */}
+      <MapContainer center={position} zoom={13} style={{ width: '100%', height: '100%' }}>
+        {/* TileLayer loads the OpenStreetMap tiles */}
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {/* Marker shows a pin on the map */}
+        <Marker position={position}>
+          <Popup>A sample marker in London</Popup>
+        </Marker>
+      </MapContainer>
+    </div>
+  );
+};
+
+
 function App() {
   return (
     <div className="flex h-screen">
       <div className="w-3/4 relative">
-        <Map />
+        {/* <Map /> */}
+        <MapComponent />
       </div>
       <div className="w-1/4 bg-white shadow-lg">
         <SidePanel />
