@@ -230,7 +230,72 @@ const MapComponent = () => {
   );
 };
 
+function AuthPopup({ onClose }) {
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Handle authentication logic here
+    console.log('Submitted:', { email, password, isSignUp });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur z-50">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96 transition-all">
+        <h2 className="text-2xl font-bold mb-4">{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 mb-4 border rounded"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 mb-4 border rounded"
+            required
+          />
+          {isSignUp && <input
+            type="text"
+            placeholder="Full Name"
+            // value={password}
+            // onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 mb-4 border rounded"
+            required
+          />}
+          <button type="submit" className="w-full bg-black text-white p-2 rounded mb-4 font-bold hover:bg-opacity-80 transition-all">
+            {isSignUp ? 'Sign Up' : 'Sign In'}
+          </button>
+        </form>
+        <button className="w-full bg-red-500 text-white p-2 rounded mb-4">
+          Sign in with Google
+        </button>
+        <p className="text-center">
+          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+          <button
+            className="text-blue-500 ml-1 font-semibold underline"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
+            {isSignUp ? 'Sign In' : 'Sign Up'}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   return (
     <div className="w-full h-screen relative">
       <div className="h-full w-full relative z-0">
@@ -240,6 +305,7 @@ function App() {
       <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
         <SidePanel />
       </div>
+      {!isAuthenticated && <AuthPopup onClose={() => setIsAuthenticated(true)} />}
     </div>
   );
 }
