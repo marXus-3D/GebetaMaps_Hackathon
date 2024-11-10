@@ -160,6 +160,18 @@ const MapComponent = () => {
     }
   }, []);
 
+  const handleMapClick = (event) => {
+    const { lat, lng } = event.latlng; // Get the latitude and longitude of the click
+
+    alert(lat + " " + lng);
+
+    // Add a new marker to the state
+    // setMarkers((prevMarkers) => [
+    //   ...prevMarkers,
+    //   { lat, lng, id: Date.now() }, // Use Date.now() to generate a unique ID
+    // ]);
+  };
+
   return (
     <div className="w-dvw h-full flex justify-center">
       {/* MapContainer is the wrapper for your map */}
@@ -211,6 +223,7 @@ const MapComponent = () => {
           center={currentPosition}
           zoom={20}
           style={{ width: "100%", height: "100%" }}
+          onClick={handleMapClick}
         >
           {/* TileLayer loads the OpenStreetMap tiles */}
           <TileLayer
@@ -221,7 +234,11 @@ const MapComponent = () => {
           {/* <Marker position={position}>
           <Popup>A sample marker in London</Popup>
         </Marker> */}
-          <Marker position={currentPosition} icon={ico} title="Current Location">
+          <Marker
+            position={currentPosition}
+            icon={ico}
+            title="Current Location"
+          >
             <Popup>Current Location</Popup>
           </Marker>
         </MapContainer>
@@ -232,20 +249,22 @@ const MapComponent = () => {
 
 function AuthPopup({ onClose }) {
   const [isSignUp, setIsSignUp] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle authentication logic here
-    console.log('Submitted:', { email, password, isSignUp });
+    console.log("Submitted:", { email, password, isSignUp });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur z-50">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96 transition-all">
-        <h2 className="text-2xl font-bold mb-4">{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          {isSignUp ? "Sign Up" : "Sign In"}
+        </h2>
         <form onSubmit={handleSubmit}>
           <input
             type="email"
@@ -263,28 +282,33 @@ function AuthPopup({ onClose }) {
             className="w-full p-2 mb-4 border rounded"
             required
           />
-          {isSignUp && <input
-            type="text"
-            placeholder="Full Name"
-            // value={password}
-            // onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 mb-4 border rounded"
-            required
-          />}
-          <button type="submit" className="w-full bg-black text-white p-2 rounded mb-4 font-bold hover:bg-opacity-80 transition-all">
-            {isSignUp ? 'Sign Up' : 'Sign In'}
+          {isSignUp && (
+            <input
+              type="text"
+              placeholder="Full Name"
+              // value={password}
+              // onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 mb-4 border rounded"
+              required
+            />
+          )}
+          <button
+            type="submit"
+            className="w-full bg-black text-white p-2 rounded mb-4 font-bold hover:bg-opacity-80 transition-all"
+          >
+            {isSignUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
         <button className="w-full bg-red-500 text-white p-2 rounded mb-4">
           Sign in with Google
         </button>
         <p className="text-center">
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+          {isSignUp ? "Already have an account?" : "Don't have an account?"}
           <button
             className="text-blue-500 ml-1 font-semibold underline"
             onClick={() => setIsSignUp(!isSignUp)}
           >
-            {isSignUp ? 'Sign In' : 'Sign Up'}
+            {isSignUp ? "Sign In" : "Sign Up"}
           </button>
         </p>
       </div>
@@ -292,9 +316,40 @@ function AuthPopup({ onClose }) {
   );
 }
 
-function App() {
+function Drawer({ isOpen, onClose }) {
+  return (
+    <div
+      className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      } transition-transform duration-300 ease-in-out z-20`}
+    >
+      <div className="p-4">
+        <h2 className="text-2xl font-bold mb-4">Menu</h2>
+        <ul>
+          <li className="mb-2">
+            <button className="text-blue-500">Home</button>
+          </li>
+          <li className="mb-2">
+            <button className="text-blue-500">Profile</button>
+          </li>
+          <li className="mb-2">
+            <button className="text-blue-500">Settings</button>
+          </li>
+        </ul>
+      </div>
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <div className="w-full h-screen relative">
@@ -302,10 +357,19 @@ function App() {
         {/* <Map /> */}
         <MapComponent />
       </div>
+      <button
+        onClick={() => setIsDrawerOpen(true)}
+        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square"
+      >
+        M
+      </button>
+      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
         <SidePanel />
       </div>
-      {!isAuthenticated && <AuthPopup onClose={() => setIsAuthenticated(true)} />}
+      {!isAuthenticated && (
+        <AuthPopup onClose={() => setIsAuthenticated(true)} />
+      )}
     </div>
   );
 }
