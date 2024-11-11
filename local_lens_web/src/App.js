@@ -1,8 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./App.css";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import L, { Map } from "leaflet";
 
 const ico = L.divIcon({
   className: "cutomMark",
@@ -133,9 +140,11 @@ function SidePanel() {
 // Set a default position (latitude, longitude)
 // Coordinates for London, UK
 
-const MapComponent = () => {
+const MapComponent = ({addEstablishment}) => {
   const [currentPosition, setCurrentLocation] = useState(null);
+  const [markers, setMarkers] = useState([]);
   const [locationError, setLocationError] = useState(null);
+  const mapRef = useRef(null);
 
   useEffect(() => {
     // Check if geolocation is available in the browser
@@ -159,6 +168,59 @@ const MapComponent = () => {
       setLocationError("Geolocation is not supported by this browser.");
     }
   }, []);
+
+  const handleMapClick = (event) => {
+    const { lat, lng } = event.latlng; // Get the latitude and longitude of the click
+
+    alert(lat + " " + lng);
+
+    // Add a new marker to the state
+    // setMarkers((prevMarkers) => [
+    //   ...prevMarkers,
+    //   { lat, lng, id: Date.now() }, // Use Date.now() to generate a unique ID
+    // ]);
+  };
+
+  function MapEvent() {
+    const map = useMapEvents({
+      click(e) {
+        const markPos = e.latlng;
+
+        const distance = calculateDistance(
+          markPos.lat,
+          markPos.lng,
+          currentPosition[0],
+          currentPosition[1]
+        );
+
+        if (distance < 20) {
+          alert("too close");
+        }else {
+          addEstablishment(true);
+        }
+
+      },
+    });
+  }
+
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) *
+        Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c * 1000; // Distance in meters
+    return distance;
+  }
+
+  function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+  }
 
   return (
     <div className="w-dvw h-full flex justify-center">
@@ -217,11 +279,12 @@ const MapComponent = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          {/* Marker shows a pin on the map */}
-          {/* <Marker position={position}>
-          <Popup>A sample marker in London</Popup>
-        </Marker> */}
-          <Marker position={currentPosition} icon={ico} title="Current Location">
+          <MapEvent />
+          <Marker
+            position={currentPosition}
+            icon={ico}
+            title="Current Location"
+          >
             <Popup>Current Location</Popup>
           </Marker>
         </MapContainer>
@@ -232,20 +295,22 @@ const MapComponent = () => {
 
 function AuthPopup({ onClose }) {
   const [isSignUp, setIsSignUp] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle authentication logic here
-    console.log('Submitted:', { email, password, isSignUp });
+    console.log("Submitted:", { email, password, isSignUp });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur z-50">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96 transition-all">
-        <h2 className="text-2xl font-bold mb-4">{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          {isSignUp ? "Sign Up" : "Sign In"}
+        </h2>
         <form onSubmit={handleSubmit}>
           <input
             type="email"
@@ -263,28 +328,33 @@ function AuthPopup({ onClose }) {
             className="w-full p-2 mb-4 border rounded"
             required
           />
-          {isSignUp && <input
-            type="text"
-            placeholder="Full Name"
-            // value={password}
-            // onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 mb-4 border rounded"
-            required
-          />}
-          <button type="submit" className="w-full bg-black text-white p-2 rounded mb-4 font-bold hover:bg-opacity-80 transition-all">
-            {isSignUp ? 'Sign Up' : 'Sign In'}
+          {isSignUp && (
+            <input
+              type="text"
+              placeholder="Full Name"
+              // value={password}
+              // onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 mb-4 border rounded"
+              required
+            />
+          )}
+          <button
+            type="submit"
+            className="w-full bg-black text-white p-2 rounded mb-4 font-bold hover:bg-opacity-80 transition-all"
+          >
+            {isSignUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
         <button className="w-full bg-red-500 text-white p-2 rounded mb-4">
           Sign in with Google
         </button>
         <p className="text-center">
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+          {isSignUp ? "Already have an account?" : "Don't have an account?"}
           <button
             className="text-blue-500 ml-1 font-semibold underline"
             onClick={() => setIsSignUp(!isSignUp)}
           >
-            {isSignUp ? 'Sign In' : 'Sign Up'}
+            {isSignUp ? "Sign In" : "Sign Up"}
           </button>
         </p>
       </div>
@@ -292,20 +362,139 @@ function AuthPopup({ onClose }) {
   );
 }
 
-function App() {
+function Drawer({ isOpen, onClose }) {
+  return (
+    <div
+      className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      } transition-transform duration-300 ease-in-out z-20`}
+    >
+      <div className="p-4">
+        <h2 className="text-2xl font-bold mb-4">Menu</h2>
+        <ul>
+          <li className="mb-2">
+            <button className="text-blue-500">Home</button>
+          </li>
+          <li className="mb-2">
+            <button className="text-blue-500">Profile</button>
+          </li>
+          <li className="mb-2">
+            <button className="text-blue-500">Settings</button>
+          </li>
+        </ul>
+      </div>
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function EstablishmentPopup({ isOpen, onClose }) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState('');
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Submitted:', { name, type, rating, comment });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+        <h2 className="text-2xl font-bold mb-4">Add Establishment</h2>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Establishment Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full p-2 mb-4 border rounded"
+            required
+          />
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="w-full p-2 mb-4 border rounded"
+            required
+          >
+            <option value="">Select Type</option>
+            <option value="restaurant">Restaurant</option>
+            <option value="cafe">Cafe</option>
+            <option value="bar">Bar</option>
+            <option value="shop">Shop</option>
+            <option value="other">Other</option>
+          </select>
+          <div className="mb-4">
+            <label className="block mb-2">Rating:</label>
+            <div className="flex justify-between">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  className={`text-2xl ${rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea
+            placeholder="Leave a comment..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            className="w-full p-2 mb-4 border rounded"
+            rows="3"
+          ></textarea>
+          <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded mb-4">
+            Submit
+          </button>
+        </form>
+        <button onClick={onClose} className="w-full bg-gray-300 text-gray-700 p-2 rounded">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isEstablishmentPopupOpen, setIsEstablishmentPopupOpen] = useState(false);
 
   return (
     <div className="w-full h-screen relative">
       <div className="h-full w-full relative z-0">
         {/* <Map /> */}
-        <MapComponent />
+        <MapComponent addEstablishment={setIsEstablishmentPopupOpen}/>
       </div>
+      <button
+        onClick={() => setIsDrawerOpen(true)}
+        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
+      >
+        M
+      </button>
+      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <EstablishmentPopup
+          isOpen={isEstablishmentPopupOpen}
+          onClose={() => setIsEstablishmentPopupOpen(false)}
+        />
       <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
         <SidePanel />
       </div>
-      {!isAuthenticated && <AuthPopup onClose={() => setIsAuthenticated(true)} />}
+      {!isAuthenticated && (
+        <AuthPopup onClose={() => setIsAuthenticated(true)} />
+      )}
     </div>
   );
 }
