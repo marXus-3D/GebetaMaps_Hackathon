@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
+import app, { auth, db } from "./firebase-config";
+// import dotenv from "dotenv";
 import "./App.css";
 import {
   MapContainer,
@@ -6,10 +8,9 @@ import {
   Marker,
   Popup,
   useMapEvents,
-  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L, { Map } from "leaflet";
+import L, { LatLng, latLng } from "leaflet";
 
 const ico = L.divIcon({
   className: "cutomMark",
@@ -20,16 +21,214 @@ const ico = L.divIcon({
   iconAnchor: [16, 16],
 });
 
-function SidePanel() {
+// dotenv.config();
+
+function SidePanel({target}) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("places");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  const [nearbyPlaceSearch, setNearbySearch] = useState(null);
+  const [nearbyGebetaSearch, setNearbyGebeta] = useState(null);
+
+  const [navigateCoord, setNavigateCoor] = useState();
 
   const placeholderPlaces = [
-    { name: "Coffee Shop", distance: "0.2 km" },
-    { name: "Park", distance: "0.5 km" },
-    { name: "Grocery Store", distance: "0.8 km" },
-    { name: "Restaurant", distance: "1.2 km" },
-    { name: "Gym", distance: "1.5 km" },
+    { name: "Coffee Shop", distance: "0.2 km", reviewed: true, rating: 4.5 },
+    { name: "Park", distance: "0.5 km", reviewed: false },
+    { name: "Grocery Store", distance: "0.8 km", reviewed: true, rating: 3.8 },
+    { name: "Restaurant", distance: "1.2 km", reviewed: true, rating: 4.2 },
+    { name: "Gym", distance: "1.5 km", reviewed: false },
+    { name: "Bookstore", distance: "0.7 km", reviewed: true, rating: 4.0 },
+    { name: "Cinema", distance: "2.0 km", reviewed: false },
+    { name: "Bakery", distance: "0.3 km", reviewed: true, rating: 4.7 },
   ];
+
+  const filteredPlaces = placeholderPlaces.filter((place) =>
+    place.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const reviewedPlaces = filteredPlaces.filter((place) => place.reviewed);
+  const unreviewedPlaces = filteredPlaces.filter((place) => !place.reviewed);
+
+  const fetchGebetaPlaces = async (term) => {
+    setNearbyGebeta(null);
+    console.log("This is your token", process.env.token);
+    try {
+      const response = await fetch(
+        `https://mapapi.gebeta.app/api/v1/route/geocoding?name=${term}&apiKey=`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json().then((data) => {
+        setNearbyGebeta(data.data);
+      });
+
+      console.log("Success:", data);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const renderPlaces = (places) => {
+    return places.map((place, index) => (
+      <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
+        <p className="font-semibold">{place.name}</p>
+        <p className="text-sm text-gray-600">Distance: {place.distance}</p>
+        {place.reviewed && (
+          <p className="text-sm text-blue-600">Rating: {place.rating}</p>
+        )}
+      </li>
+    ));
+  };
+  const renderUnreviewed = (places) => {
+    return places == null ? (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMid"
+        style={{shapeRendering: "auto", display: "block", background: "transparent"}}
+        width="100%"
+        height="200"
+      >
+        <g>
+          <circle fill="#464646" r="10" cy="50" cx="84">
+            <animate
+              begin="0s"
+              keySplines="0 0.5 0.5 1"
+              values="10;0"
+              keyTimes="0;1"
+              calcMode="spline"
+              dur="0.25s"
+              repeatCount="indefinite"
+              attributeName="r"
+            ></animate>
+            <animate
+              begin="0s"
+              values="#464646;#464646;#dfdfdf;#a0a0a0;#464646"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="discrete"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="fill"
+            ></animate>
+          </circle>
+          <circle fill="#464646" r="10" cy="50" cx="16">
+            <animate
+              begin="0s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="0;0;10;10;10"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="r"
+            ></animate>
+            <animate
+              begin="0s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="16;16;16;50;84"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="cx"
+            ></animate>
+          </circle>
+          <circle fill="#a0a0a0" r="10" cy="50" cx="50">
+            <animate
+              begin="-0.25s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="0;0;10;10;10"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="r"
+            ></animate>
+            <animate
+              begin="-0.25s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="16;16;16;50;84"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="cx"
+            ></animate>
+          </circle>
+          <circle fill="#dfdfdf" r="10" cy="50" cx="84">
+            <animate
+              begin="-0.5s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="0;0;10;10;10"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="r"
+            ></animate>
+            <animate
+              begin="-0.5s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="16;16;16;50;84"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="cx"
+            ></animate>
+          </circle>
+          <circle fill="#464646" r="10" cy="50" cx="16">
+            <animate
+              begin="-0.75s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="0;0;10;10;10"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="r"
+            ></animate>
+            <animate
+              begin="-0.75s"
+              keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+              values="16;16;16;50;84"
+              keyTimes="0;0.25;0.5;0.75;1"
+              calcMode="spline"
+              dur="1s"
+              repeatCount="indefinite"
+              attributeName="cx"
+            ></animate>
+          </circle>
+          <g></g>
+        </g>
+      </svg>
+    ) : (
+      places.map((place, index) => (
+        <li key={index} className="mb-2 p-2 bg-gray-100 rounded cursor-pointer hover:bg-gray-300 transition-colors" onClick={target({lat: place.latitude, lon: place.longitude})}>
+          <p className="font-semibold">{place.name}</p>
+          <p className="text-sm text-gray-600">Distance: 1.0km</p>
+          <p className="text-sm text-blue-600">Type: {place.type}</p>
+        </li>
+      ))
+    );
+  };
+
+  const handleSearchChange = (e) => {
+    fetchGebetaPlaces(e.target.value);
+    setSearchTerm(e.target.value);
+    setShowSearchResults(e.target.value.length > 0);
+  };
 
   const placeholderPeople = [
     { name: "John Doe", distance: "0.3 km" },
@@ -75,7 +274,27 @@ function SidePanel() {
   };
 
   return (
-    <div className="rounded-lg bg-white p-4 overflow-y-auto h-full flex flex-col">
+    <div
+      className="rounded-lg bg-white p-4 overflow-y-auto h-full flex flex-col"
+      style={{ maxHeight: "80dvh" }}
+    >
+      <input
+        type="text"
+        placeholder="Search places..."
+        value={searchTerm}
+        onChange={handleSearchChange}
+        className="w-full p-2 mb-4 border rounded"
+      />
+      {showSearchResults && (
+        <div className="absolute top-16 left-0 right-0 bg-white border rounded shadow-lg z-10 max-h-96 overflow-y-auto">
+          <div className="p-4">
+            <h3 className="text-lg font-bold mb-2">Reviewed Places</h3>
+            <ul className="mb-4">{renderPlaces(reviewedPlaces)}</ul>
+            <h3 className="text-lg font-bold mb-2">Unreviewed Places</h3>
+            <ul>{renderUnreviewed(nearbyGebetaSearch)}</ul>
+          </div>
+        </div>
+      )}
       <div className="flex mb-4">
         <button
           className={`flex-1 py-2 ${
@@ -140,11 +359,10 @@ function SidePanel() {
 // Set a default position (latitude, longitude)
 // Coordinates for London, UK
 
-const MapComponent = ({addEstablishment}) => {
+const MapComponent = ({ addEstablishment, target }) => {
   const [currentPosition, setCurrentLocation] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [locationError, setLocationError] = useState(null);
-  const mapRef = useRef(null);
 
   useEffect(() => {
     // Check if geolocation is available in the browser
@@ -181,7 +399,7 @@ const MapComponent = ({addEstablishment}) => {
     // ]);
   };
 
-  function MapEvent() {
+  function MapEvent({target}) {
     const map = useMapEvents({
       click(e) {
         const markPos = e.latlng;
@@ -193,14 +411,17 @@ const MapComponent = ({addEstablishment}) => {
           currentPosition[1]
         );
 
-        if (distance < 20) {
+        if (distance < 10) {
           alert("too close");
-        }else {
+        } else {
           addEstablishment(true);
         }
-
       },
     });
+
+    useEffect(() => { 
+      // if(target) map.flyTo(target, 20, { duration: 2000 }); 
+    }, [map, target]);
   }
 
   function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -279,7 +500,7 @@ const MapComponent = ({addEstablishment}) => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          <MapEvent />
+          <MapEvent target={target}/>
           <Marker
             position={currentPosition}
             icon={ico}
@@ -394,22 +615,39 @@ function Drawer({ isOpen, onClose }) {
 }
 
 function EstablishmentPopup({ isOpen, onClose }) {
-  const [name, setName] = useState('');
-  const [type, setType] = useState('');
+  const [name, setName] = useState("");
+  const [type, setType] = useState("");
   const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
+  const [images, setImages] = useState([]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Submitted:', { name, type, rating, comment });
+    console.log("Submitted:", { name, type, rating, comment, images });
     onClose();
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (images.length + files.length > 6) {
+      alert("You can only upload up to 6 images");
+      return;
+    }
+    const newImages = files.map((file) => URL.createObjectURL(file));
+    setImages([...images, ...newImages]);
+  };
+
+  const removeImage = (index) => {
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    setImages(newImages);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-h-screen overflow-y-auto relative">
         <h2 className="text-2xl font-bold mb-4">Add Establishment</h2>
         <form onSubmit={handleSubmit}>
           <input
@@ -441,7 +679,9 @@ function EstablishmentPopup({ isOpen, onClose }) {
                   key={star}
                   type="button"
                   onClick={() => setRating(star)}
-                  className={`text-2xl ${rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}
+                  className={`text-2xl ${
+                    rating >= star ? "text-yellow-500" : "text-gray-300"
+                  }`}
                 >
                   ★
                 </button>
@@ -455,12 +695,54 @@ function EstablishmentPopup({ isOpen, onClose }) {
             className="w-full p-2 mb-4 border rounded"
             rows="3"
           ></textarea>
-          <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded mb-4">
+          <div className="mb-4">
+            <label className="block mb-2">Upload Images (max 6):</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {images.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Uploaded ${index + 1}`}
+                  className="w-full h-24 object-cover rounded"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white p-2 rounded mb-4"
+          >
             Submit
           </button>
         </form>
-        <button onClick={onClose} className="w-full bg-gray-300 text-gray-700 p-2 rounded">
-          Cancel
+        <button
+          onClick={onClose}
+          className="aspect-square absolute right-2 top-2 shadow-2xl"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 384 512"
+            fill="#101010"
+            width="14px"
+            height="14px"
+          >
+            <path d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z" />
+          </svg>
         </button>
       </div>
     </div>
@@ -470,13 +752,34 @@ function EstablishmentPopup({ isOpen, onClose }) {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isEstablishmentPopupOpen, setIsEstablishmentPopupOpen] = useState(false);
+  const [isEstablishmentPopupOpen, setIsEstablishmentPopupOpen] =
+    useState(false);
+
+  const [user, setUser] = useState(null);
+  const [target, setTarget] = useState(null);
+
+  const SignUpByEmail = async (email, password) => {
+    try {
+      const result = await auth.createUserWithEmailAndPassword(email, password);
+      const user = result.user;
+      // user.photoURL
+      setUser(user);
+    } catch (error) {
+      if (error.code === "auth/invalid-email") {
+        alert("Invalid email format.");
+      } else if (error.code === "auth/email-already-in-use") {
+        alert("Email is already in use.");
+      } else {
+        alert("Error:", error.message);
+      }
+    }
+  };
 
   return (
     <div className="w-full h-screen relative">
       <div className="h-full w-full relative z-0">
         {/* <Map /> */}
-        <MapComponent addEstablishment={setIsEstablishmentPopupOpen}/>
+        <MapComponent addEstablishment={setIsEstablishmentPopupOpen} target={target}/>
       </div>
       <button
         onClick={() => setIsDrawerOpen(true)}
@@ -486,11 +789,11 @@ function App() {
       </button>
       <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       <EstablishmentPopup
-          isOpen={isEstablishmentPopupOpen}
-          onClose={() => setIsEstablishmentPopupOpen(false)}
-        />
+        isOpen={isEstablishmentPopupOpen}
+        onClose={() => setIsEstablishmentPopupOpen(false)}
+      />
       <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
-        <SidePanel />
+        <SidePanel target={setTarget}/>
       </div>
       {!isAuthenticated && (
         <AuthPopup onClose={() => setIsAuthenticated(true)} />
