@@ -1,3 +1,7 @@
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
+import app from "./firebase-config";
+
 import React, { useEffect, useState, useRef } from "react";
 import "./App.css";
 import {
@@ -10,6 +14,13 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L, { Map } from "leaflet";
+
+const auth = app.auth();
+const provider = new GoogleAuthProvider();
+
+
+const [user, setUser] = useState(null);
+
 
 const ico = L.divIcon({
   className: "cutomMark",
@@ -498,5 +509,86 @@ function App() {
     </div>
   );
 }
+
+//To sign in using email
+const SignInByEmail = async (email, password) => {
+  try {
+    const result = await auth.signInWithEmailAndPassword(email, password);
+    const user = result.user;
+    setUser(user); 
+  } catch (error) {
+    console.error(error);
+    alert("Failed to sign in. Please check your email and password.");
+  }
+};
+
+//To sign up using email
+const SignUpByEmail = async (email, password) => {
+  alert("Attempting to sign-up...");
+  try {
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const user = userCredential.user;
+    setUser(user); 
+  } catch (error) {
+    console.error(error);
+    alert("Sign-up failed. Please try again.");
+  }
+};
+
+//To sign in using your google account
+const signInByGoogle = async () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    const result = await firebase.auth().signInWithPopup(provider);
+    const user = result.user;
+    setUser(user); // Update state or store user info 
+    alert("Google sign-in successful:", user);
+  } catch (error) {
+    alert("Google sign-in error:", error);
+  }
+};
+
+//To check if the email is valid
+const handleEmailSignUp = async (email, password) => {
+  try {
+    await firebase.auth().createUserWithEmailAndPassword(email, password);
+    console.log("Sign-up successful!");
+  } catch (error) {
+    if (error.code === 'auth/invalid-email') {
+      alert("Invalid email format.");
+    } else if (error.code === 'auth/email-already-in-use') {
+      alert("Email is already in use.");
+    } else {
+      alert("Error:", error.message);
+    }
+  }
+};
+
+//To validate the password
+const SignUpForm = () => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  
+  const handleSignUp = (e) => {
+    e.preventDefault(); // Prevent form submission
+    
+    // Password validation criteria
+    const minLength = 8; 
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*]/.test(password); // Special character check
+
+    // Check if all criteria are met
+    if (password.length < minLength) {
+      setError('Password must be at least 8 characters long.');
+    } else if (!hasNumber) {
+      setError('Password must contain at least one number.');
+    } else if (!hasSpecialChar) {
+      setError('Password must contain at least one special character.');
+    } else {
+      setError(''); 
+      console.log("Sign-up successful:", password); 
+    }
+  }
+};
 
 export default App;
