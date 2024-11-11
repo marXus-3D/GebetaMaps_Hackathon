@@ -143,7 +143,7 @@ function AuthPopup({ onClose, setUser }) {
   );
 }
 
-function Drawer({ isOpen, onClose }) {
+function Drawer({ isOpen, onClose, setUser }) {
   return (
     <div
       className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
@@ -170,6 +170,9 @@ function Drawer({ isOpen, onClose }) {
       >
         ✕
       </button>
+      <button className="absolute bottom-1 right-2 text-red-400 underline font-semibold" onClick={() => {auth.signOut(); }}>
+        Log Out
+      </button>
     </div>
   );
 }
@@ -193,6 +196,13 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+  useEffect(() => {
+    if(user){
+      setIsAuthenticated(true);
+    }else {
+      setIsAuthenticated(false);
+    }
+  }, [user]);
 
   //To validate the password
   const SignUpForm = () => {
@@ -229,11 +239,11 @@ function App() {
       </div>
       <button
         onClick={() => setIsDrawerOpen(true)}
-        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
+        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12 font-bold text-lg"
       >
-        M
+        {user && (user.displayName || user.email.slice(0,2).toUpperCase())}
       </button>
-      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} setUser={setUser}/>
       <EstablishmentPopup
         isOpen={isEstablishmentPopupOpen}
         onClose={() => setIsEstablishmentPopupOpen(false)}
