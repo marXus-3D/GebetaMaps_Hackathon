@@ -59,7 +59,7 @@ const MapComponent = ({ addEstablishment, target, map, setMap }) => {
     // ]);
   };
 
-  function MapEvent({ target }) {
+  function MapEvent({target}) {
     const map = useMapEvents({
       click(e) {
         const markPos = e.latlng;
@@ -75,6 +75,7 @@ const MapComponent = ({ addEstablishment, target, map, setMap }) => {
           alert("too close");
         } else {
           addEstablishment(true);
+          target(e.latlng);
         }
       },
       

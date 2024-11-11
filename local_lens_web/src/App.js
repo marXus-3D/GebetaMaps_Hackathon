@@ -283,7 +283,7 @@ function App() {
         {/* <Map /> */}
         <MapComponent
           addEstablishment={setIsEstablishmentPopupOpen}
-          target={target}
+          target={setTarget}
           map={map}
           setMap={setMap}
         />
@@ -306,6 +306,7 @@ function App() {
       <EstablishmentPopup
         isOpen={isEstablishmentPopupOpen}
         onClose={() => setIsEstablishmentPopupOpen(false)}
+        target={target}
       />
       <SidePanel map={map}/>
       {/* map.setView([ 9.03, 38.74], 20, { animate: true, duration: 2}); */}

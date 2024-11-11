@@ -30,10 +30,9 @@ function SidePanel({ map }) {
 
   const fetchGebetaPlaces = async (term) => {
     setNearbyGebeta(null);
-    console.log("This is your token", process.env.token);
     try {
       const response = await fetch(
-        `https://mapapi.gebeta.app/api/v1/route/geocoding?name=${term}&apiKey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55bmFtZSI6ImhhY2thdGhvbiIsImRlc2NyaXB0aW9uIjoiN2U0NmI2OTUtZmE5Yi00NDQ3LTliMjgtOGQ1NzQwMWQ3MjYwIiwiaWQiOiI4NzQzYTUyZC1jNGRjLTQyNjUtYWI1ZC0yMTJkNmI3NmVmNTgiLCJ1c2VybmFtZSI6ImhhY2F0aG9uIn0.qBPwmYTCHTjOQbJKFzFTCalyRdT_3fIW0BcqVno17g8`,
+        `https://mapapi.gebeta.app/api/v1/route/geocoding?name=${term}&apiKey=${process.env.REACT_APP_TOKEN}`,
         {
           method: "GET",
           headers: {
