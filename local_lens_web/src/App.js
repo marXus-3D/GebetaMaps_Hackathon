@@ -1,6 +1,7 @@
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import app from "./firebase-config";
+import { GoogleAuthProvider } from "firebase/auth";
 
 import React, { useEffect, useState, useRef } from "react";
 import "./App.css";
@@ -17,9 +18,6 @@ import L, { Map } from "leaflet";
 
 const auth = app.auth();
 const provider = new GoogleAuthProvider();
-
-
-const [user, setUser] = useState(null);
 
 
 const ico = L.divIcon({
@@ -482,35 +480,10 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEstablishmentPopupOpen, setIsEstablishmentPopupOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
-  return (
-    <div className="w-full h-screen relative">
-      <div className="h-full w-full relative z-0">
-        {/* <Map /> */}
-        <MapComponent addEstablishment={setIsEstablishmentPopupOpen}/>
-      </div>
-      <button
-        onClick={() => setIsDrawerOpen(true)}
-        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
-      >
-        M
-      </button>
-      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
-      <EstablishmentPopup
-          isOpen={isEstablishmentPopupOpen}
-          onClose={() => setIsEstablishmentPopupOpen(false)}
-        />
-      <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
-        <SidePanel />
-      </div>
-      {!isAuthenticated && (
-        <AuthPopup onClose={() => setIsAuthenticated(true)} />
-      )}
-    </div>
-  );
-}
 
-//To sign in using email
+  //To sign in using email
 const SignInByEmail = async (email, password) => {
   try {
     const result = await auth.signInWithEmailAndPassword(email, password);
@@ -590,5 +563,32 @@ const SignUpForm = () => {
     }
   }
 };
+
+  return (
+    <div className="w-full h-screen relative">
+      <div className="h-full w-full relative z-0">
+        {/* <Map /> */}
+        <MapComponent addEstablishment={setIsEstablishmentPopupOpen}/>
+      </div>
+      <button
+        onClick={() => setIsDrawerOpen(true)}
+        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
+      >
+        M
+      </button>
+      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <EstablishmentPopup
+          isOpen={isEstablishmentPopupOpen}
+          onClose={() => setIsEstablishmentPopupOpen(false)}
+        />
+      <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
+        <SidePanel />
+      </div>
+      {!isAuthenticated && (
+        <AuthPopup onClose={() => setIsAuthenticated(true)} />
+      )}
+    </div>
+  );
+}
 
 export default App;
