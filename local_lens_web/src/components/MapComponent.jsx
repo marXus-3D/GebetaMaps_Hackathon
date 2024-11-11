@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -19,7 +19,7 @@ const ico = L.divIcon({
   iconAnchor: [16, 16],
 });
 
-function MapComponent({ addEstablishment }) {
+const MapComponent = ({ addEstablishment, target, map, setMap }) => {
   const [currentPosition, setCurrentLocation] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [locationError, setLocationError] = useState(null);
@@ -59,7 +59,7 @@ function MapComponent({ addEstablishment }) {
     // ]);
   };
 
-  function MapEvent() {
+  function MapEvent({ target }) {
     const map = useMapEvents({
       click(e) {
         const markPos = e.latlng;
@@ -71,12 +71,13 @@ function MapComponent({ addEstablishment }) {
           currentPosition[1]
         );
 
-        if (distance < 20) {
+        if (distance < 10) {
           alert("too close");
         } else {
           addEstablishment(true);
         }
       },
+      
     });
   }
 
@@ -100,11 +101,10 @@ function MapComponent({ addEstablishment }) {
   }
 
   return (
-    <div className="w-dvw h-full">
+    <div className="w-dvw h-full flex justify-center">
       {/* MapContainer is the wrapper for your map */}
       {currentPosition == null ? (
-        <div className="bg-red w-full h-full flex justify-center z-50">
-          <svg
+        <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 100 100"
           preserveAspectRatio="xMidYMid"
@@ -146,19 +146,19 @@ function MapComponent({ addEstablishment }) {
             <g></g>
           </g>
         </svg>
-          </div>
       ) : (
         <MapContainer
           center={currentPosition}
           zoom={20}
           style={{ width: "100%", height: "100%" }}
+          ref={setMap}
         >
           {/* TileLayer loads the OpenStreetMap tiles */}
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          <MapEvent />
+          <MapEvent target={target} />
           <Marker
             position={currentPosition}
             icon={ico}
@@ -170,6 +170,6 @@ function MapComponent({ addEstablishment }) {
       )}
     </div>
   );
-}
+};
 
 export default MapComponent;
