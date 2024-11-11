@@ -58,6 +58,7 @@ function AuthPopup({ onClose, setUser }) {
         password
       );
       const user = userCredential.user;
+      await storeUserData(user, email);
       setUser(user);
     } catch (error) {
       if (error.code === "auth/invalid-email") {
@@ -75,6 +76,7 @@ function AuthPopup({ onClose, setUser }) {
     try {
       const result = await auth.signInWithPopup(provider);
       const user = result.user;
+      await storeUserData(user, email);
       setUser(user); // Update state or store user info
       alert("Google sign-in successful:", user);
     } catch (error) {
@@ -82,6 +84,19 @@ function AuthPopup({ onClose, setUser }) {
     }
   };
 
+  const storeUserData = async (user, email, /*profilePicture*/) => {
+    try {
+      const db = firebase.firestore();
+      await db.collection('users').doc(user.uid).set({
+        name: user.name,  // Or `user.name` if you're using a different method for name
+        email: email,
+        //profilePicture: profilePicture || null,
+      });
+    } catch (error) {
+      console.error(error);
+      //throw new Error('Failed to store user data');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur z-50">
