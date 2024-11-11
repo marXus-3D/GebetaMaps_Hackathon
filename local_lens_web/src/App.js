@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useRef } from "react";
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
 import app, { auth, db } from "./firebase-config";
-// import dotenv from "dotenv";
+import { doc, getDoc } from "firebase/firestore";
+import { GoogleAuthProvider } from "firebase/auth";
+
+import React, { useEffect, useState } from "react";
 import "./App.css";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMapEvents,
-} from "react-leaflet";
+import MapComponent from "./components/MapComponent";
+import EstablishmentPopup from "./components/EstablishmentPopup";
+import SidePanel from "./components/SidePanel";
 import "leaflet/dist/leaflet.css";
 import L, { LatLng, latLng } from "leaflet";
 
@@ -355,10 +355,6 @@ function SidePanel({target}) {
     </div>
   );
 }
-
-// Set a default position (latitude, longitude)
-// Coordinates for London, UK
-
 const MapComponent = ({ addEstablishment, target }) => {
   const [currentPosition, setCurrentLocation] = useState(null);
   const [markers, setMarkers] = useState([]);
@@ -514,16 +510,89 @@ const MapComponent = ({ addEstablishment, target }) => {
   );
 };
 
-function AuthPopup({ onClose }) {
+function AuthPopup({ onClose, setUser }) {
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+
+  console.log("isSignUp:", isSignUp);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle authentication logic here
     console.log("Submitted:", { email, password, isSignUp });
+    if (isSignUp) {
+      SignUpByEmail(email, password);
+    } else {
+      SignInByEmail(email, password);
+    }
     onClose();
+  };
+
+  //To sign in using email
+  const SignInByEmail = async (email, password) => {
+    try {
+      const result = await auth.signInWithEmailAndPassword(email, password);
+      const user = result.user;
+      setUser(user);
+    } catch (error) {
+      setUser(null);
+      console.error(error);
+      alert("Failed to sign in. Please check your email and password.");
+    }
+  };
+
+  //To sign up using email
+  const SignUpByEmail = async (email, password) => {
+    alert("Attempting to sign-up...");
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(
+        email,
+        password
+      );
+      const user = userCredential.user;
+      await storeUserData(user, email, name);
+      setUser(user);
+    } catch (error) {
+      setUser(null);
+      if (error.code === "auth/invalid-email") {
+        alert("Invalid email format.");
+      } else if (error.code === "auth/email-already-in-use") {
+        alert("Email is already in use.");
+      } else {
+        alert("Error:", error.message);
+      }
+    }
+  };
+
+  //To sign in using your google account
+  const signInByGoogle = async () => {
+    try {
+      const result = await auth.signInWithPopup(provider);
+      const user = result.user;
+      await storeUserData(user, email, user.displayName);
+      setUser(user); // Update state or store user info
+      alert("Google sign-in successful:", user);
+    } catch (error) {
+      setUser(null);
+      alert("Google sign-in error:", error);
+    }
+  };
+
+  const storeUserData = async (user, email, name) => {
+    try {
+      // const db = firebase.firestore();
+      await db.collection("users").doc(user.uid).set({
+        uid: user.uid,
+        name: name, // Or `user.name` if you're using a different method for name
+        email: email,
+        //profilePicture: profilePicture || null,
+      });
+    } catch (error) {
+      console.error(error);
+      //throw new Error('Failed to store user data');
+    }
   };
 
   return (
@@ -553,8 +622,8 @@ function AuthPopup({ onClose }) {
             <input
               type="text"
               placeholder="Full Name"
-              // value={password}
-              // onChange={(e) => setPassword(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full p-2 mb-4 border rounded"
               required
             />
@@ -566,7 +635,13 @@ function AuthPopup({ onClose }) {
             {isSignUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
-        <button className="w-full bg-red-500 text-white p-2 rounded mb-4">
+        <button
+          className="w-full bg-red-500 text-white p-2 rounded mb-4"
+          onClick={() => {
+            signInByGoogle();
+            onClose();
+          }}
+        >
           Sign in with Google
         </button>
         <p className="text-center">
@@ -583,7 +658,7 @@ function AuthPopup({ onClose }) {
   );
 }
 
-function Drawer({ isOpen, onClose }) {
+function Drawer({ isOpen, onClose, setUser }) {
   return (
     <div
       className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
@@ -745,34 +820,93 @@ function EstablishmentPopup({ isOpen, onClose }) {
           </svg>
         </button>
       </div>
+      <button
+        className="absolute bottom-1 right-2 text-red-400 underline font-semibold"
+        onClick={() => {
+          auth.signOut();
+        }}
+      >
+        Log Out
+      </button>
     </div>
   );
 }
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEstablishmentPopupOpen, setIsEstablishmentPopupOpen] =
     useState(false);
 
   const [user, setUser] = useState(null);
   const [target, setTarget] = useState(null);
+  const [userDetail, setUserDetail] = useState(null);
 
-  const SignUpByEmail = async (email, password) => {
-    try {
-      const result = await auth.createUserWithEmailAndPassword(email, password);
-      const user = result.user;
-      // user.photoURL
-      setUser(user);
-    } catch (error) {
-      if (error.code === "auth/invalid-email") {
-        alert("Invalid email format.");
-      } else if (error.code === "auth/email-already-in-use") {
-        alert("Email is already in use.");
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        setIsAuthenticated(false);
       } else {
-        alert("Error:", error.message);
+        setIsAuthenticated(true);
+        setUser(user);
       }
+    });
+
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          setUserDetail(docSnap.data());
+          console.log("User", docSnap.data());
+        } else {
+          console.log("No such document!");
+        }
+      } catch (error) {
+        // setError(error);
+        console.log("fetch error",error);
+      } finally {
+        // setLoading(false);
+      }
+    };
+    if (user) {
+      setIsAuthenticated(true);
+      fetchUser();
+    } else {
+      setIsAuthenticated(false);
+      setUserDetail(null);
     }
+  }, [user]);
+
+  //To validate the password
+  const SignUpForm = () => {
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+
+    const handleSignUp = (e) => {
+      e.preventDefault(); // Prevent form submission
+
+      // Password validation criteria
+      const minLength = 8;
+      const hasNumber = /\d/.test(password);
+      const hasSpecialChar = /[!@#$%^&*]/.test(password); // Special character check
+
+      // Check if all criteria are met
+      if (password.length < minLength) {
+        setError("Password must be at least 8 characters long.");
+      } else if (!hasNumber) {
+        setError("Password must contain at least one number.");
+      } else if (!hasSpecialChar) {
+        setError("Password must contain at least one special character.");
+      } else {
+        setError("");
+        console.log("Sign-up successful:", password);
+      }
+    };
   };
 
   return (
@@ -783,20 +917,27 @@ function App() {
       </div>
       <button
         onClick={() => setIsDrawerOpen(true)}
-        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
+        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12 font-bold text-lg"
       >
-        M
+        {userDetail && userDetail.name[0].toUpperCase() + userDetail.name.split(' ')[1][0].toUpperCase() }
       </button>
-      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <Drawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        setUser={setUser}
+      />
       <EstablishmentPopup
         isOpen={isEstablishmentPopupOpen}
         onClose={() => setIsEstablishmentPopupOpen(false)}
       />
-      <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
-        <SidePanel target={setTarget}/>
-      </div>
+        <SidePanel />
       {!isAuthenticated && (
-        <AuthPopup onClose={() => setIsAuthenticated(true)} />
+        <AuthPopup
+          onClose={() => {
+            user == null ? setIsAuthenticated(false) : setIsAuthenticated(true);
+          }}
+          setUser={setUser}
+        />
       )}
     </div>
   );
