@@ -100,10 +100,11 @@ function MapComponent({ addEstablishment }) {
   }
 
   return (
-    <div className="w-dvw h-full flex justify-center">
+    <div className="w-dvw h-full">
       {/* MapContainer is the wrapper for your map */}
       {currentPosition == null ? (
-        <svg
+        <div className="bg-red w-full h-full flex justify-center z-50">
+          <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 100 100"
           preserveAspectRatio="xMidYMid"
@@ -145,6 +146,7 @@ function MapComponent({ addEstablishment }) {
             <g></g>
           </g>
         </svg>
+          </div>
       ) : (
         <MapContainer
           center={currentPosition}
