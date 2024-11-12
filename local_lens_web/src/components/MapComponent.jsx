@@ -9,6 +9,11 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import app, { db } from "../firebase-config";
+import { collection } from "firebase/firestore";
+import { init } from "@thetsf/geofirex";
+
+const geo = init(app);
 
 const ico = L.divIcon({
   className: "cutomMark",
@@ -47,6 +52,25 @@ const MapComponent = ({ addEstablishment, target, map, setMap }) => {
     }
   }, []);
 
+  useEffect(() => {
+    if (currentPosition) {
+      const locations = collection(db, "locations");
+      const center = geo.point(currentPosition[0], currentPosition[1]);
+      const radius = 5; // 10 Kmeters
+      const field = "geohash";
+
+      const firestoreRef = db
+        .collection("cities")
+        .where("name", "!=", "Phoenix");
+      const geoRef = geo.query(firestoreRef);
+      // console.log("query results", query);
+
+      const query = geoRef.within(center, radius, field);
+
+      query.subscribe((hits) => console.log(hits));
+    }
+  }, [currentPosition]);
+
   const handleMapClick = (event) => {
     const { lat, lng } = event.latlng; // Get the latitude and longitude of the click
 
@@ -59,7 +83,7 @@ const MapComponent = ({ addEstablishment, target, map, setMap }) => {
     // ]);
   };
 
-  function MapEvent({target}) {
+  function MapEvent({ target }) {
     const map = useMapEvents({
       click(e) {
         const markPos = e.latlng;
@@ -78,7 +102,6 @@ const MapComponent = ({ addEstablishment, target, map, setMap }) => {
           target(e.latlng);
         }
       },
-      
     });
   }
 

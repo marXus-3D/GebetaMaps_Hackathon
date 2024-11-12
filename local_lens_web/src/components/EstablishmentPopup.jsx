@@ -1,5 +1,5 @@
 import { useState } from "react";
-import app, { db } from "../firebase-config";
+import app, { db, auth } from "../firebase-config";
 import { collection, addDoc } from 'firebase/firestore';
 import { init } from "@thetsf/geofirex";
 
@@ -17,14 +17,14 @@ function EstablishmentPopup({ isOpen, onClose, target }) {
   }
   
 
-  const submitReview = async (review) => {
+  const submitEstablishment = async (review) => {
     try {
       // const geohash = geofirex.geohashForLocation(new geofirex.GeoPoint(target.lat, target.lon));
       console.log("target", target);
       const geohash = geo.point(target.lat, target.lng);
       const docRef = await addDoc(collection(db, "locations"), {
         geohash,
-        id: generateRandomId(),
+        id: review.id,
         latitude: target.lat,
         longitude: target.lng,
         name: review.name,
@@ -35,10 +35,26 @@ function EstablishmentPopup({ isOpen, onClose, target }) {
     }
   };
 
+  const submitReview = async (review) => {
+    try {
+      const docRef = await addDoc(collection(db, "reviews"), {
+        uid: auth.currentUser.uid,
+        id: review.id,
+        comment: review.comment,
+      });
+    }catch (error){
+      console.log(error);
+    }
+  };
+
+
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    const id = generateRandomId();
     console.log("Submitted:", { name, type, rating, comment, images });
-    submitReview({ name, type, rating, comment, images });
+    submitEstablishment({ id, name, type, rating, comment, images });
+    submitReview({ id, name, type, rating, comment, images });
     onClose();
   };
 
