@@ -1,6 +1,7 @@
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
-import app from "./firebase-config";
+import app, { auth, db } from "./firebase-config";
+import { doc, getDoc } from "firebase/firestore";
 import { GoogleAuthProvider } from "firebase/auth";
 
 import React, { useEffect, useState } from "react";
@@ -16,11 +17,11 @@ const auth = app.auth();
 const provider = new GoogleAuthProvider();
 
 // Set a default position (latitude, longitude)
-// Coordinates for London, UK
 function AuthPopup({ onClose, setUser }) {
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
 
   console.log("isSignUp:", isSignUp);
 
@@ -28,10 +29,9 @@ function AuthPopup({ onClose, setUser }) {
     e.preventDefault();
     // Handle authentication logic here
     console.log("Submitted:", { email, password, isSignUp });
-    if(isSignUp)
-    {
+    if (isSignUp) {
       SignUpByEmail(email, password);
-    }else {
+    } else {
       SignInByEmail(email, password);
     }
     onClose();
@@ -44,6 +44,7 @@ function AuthPopup({ onClose, setUser }) {
       const user = result.user;
       setUser(user);
     } catch (error) {
+      setUser(null);
       console.error(error);
       alert("Failed to sign in. Please check your email and password.");
     }
@@ -58,8 +59,10 @@ function AuthPopup({ onClose, setUser }) {
         password
       );
       const user = userCredential.user;
+      await storeUserData(user, email, name);
       setUser(user);
     } catch (error) {
+      setUser(null);
       if (error.code === "auth/invalid-email") {
         alert("Invalid email format.");
       } else if (error.code === "auth/email-already-in-use") {
@@ -73,15 +76,32 @@ function AuthPopup({ onClose, setUser }) {
   //To sign in using your google account
   const signInByGoogle = async () => {
     try {
+      const provider = new GoogleAuthProvider();
       const result = await auth.signInWithPopup(provider);
       const user = result.user;
+      await storeUserData(user, email, user.displayName);
       setUser(user); // Update state or store user info
       alert("Google sign-in successful:", user);
     } catch (error) {
+      setUser(null);
       alert("Google sign-in error:", error);
     }
   };
 
+  const storeUserData = async (user, email, name) => {
+    try {
+      // const db = firebase.firestore();
+      await db.collection("users").doc(user.uid).set({
+        uid: user.uid,
+        name: name, // Or `user.name` if you're using a different method for name
+        email: email,
+        //profilePicture: profilePicture || null,
+      });
+    } catch (error) {
+      console.error(error);
+      //throw new Error('Failed to store user data');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur z-50">
@@ -110,8 +130,8 @@ function AuthPopup({ onClose, setUser }) {
             <input
               type="text"
               placeholder="Full Name"
-              // value={password}
-              // onChange={(e) => setPassword(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full p-2 mb-4 border rounded"
               required
             />
@@ -123,10 +143,13 @@ function AuthPopup({ onClose, setUser }) {
             {isSignUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
-        <button className="w-full bg-red-500 text-white p-2 rounded mb-4" onClick={() => {
-          signInByGoogle();
-          onClose();
-        }}>
+        <button
+          className="w-full bg-red-500 text-white p-2 rounded mb-4"
+          onClick={() => {
+            signInByGoogle();
+            onClose();
+          }}
+        >
           Sign in with Google
         </button>
         <p className="text-center">
@@ -143,7 +166,7 @@ function AuthPopup({ onClose, setUser }) {
   );
 }
 
-function Drawer({ isOpen, onClose }) {
+function Drawer({ isOpen, onClose, setUser }) {
   return (
     <div
       className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
@@ -170,6 +193,14 @@ function Drawer({ isOpen, onClose }) {
       >
         ✕
       </button>
+      <button
+        className="absolute bottom-1 right-2 text-red-400 underline font-semibold"
+        onClick={() => {
+          auth.signOut();
+        }}
+      >
+        Log Out
+      </button>
     </div>
   );
 }
@@ -179,7 +210,11 @@ function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEstablishmentPopupOpen, setIsEstablishmentPopupOpen] =
     useState(false);
+
   const [user, setUser] = useState(null);
+  const [target, setTarget] = useState(null);
+  const [userDetail, setUserDetail] = useState(null);
+  const [map, setMap] = useState(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -193,6 +228,33 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          setUserDetail(docSnap.data());
+          console.log("User", docSnap.data());
+        } else {
+          console.log("No such document!");
+        }
+      } catch (error) {
+        // setError(error);
+        console.log("fetch error", error);
+      } finally {
+        // setLoading(false);
+      }
+    };
+    if (user) {
+      setIsAuthenticated(true);
+      fetchUser();
+    } else {
+      setIsAuthenticated(false);
+      setUserDetail(null);
+    }
+  }, [user]);
 
   //To validate the password
   const SignUpForm = () => {
@@ -225,22 +287,35 @@ function App() {
     <div className="w-full h-screen relative">
       <div className="h-full w-full relative z-0">
         {/* <Map /> */}
-        <MapComponent addEstablishment={setIsEstablishmentPopupOpen} />
+        <MapComponent
+          addEstablishment={setIsEstablishmentPopupOpen}
+          target={setTarget}
+          map={map}
+          setMap={setMap}
+        />
       </div>
       <button
-        onClick={() => setIsDrawerOpen(true)}
-        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
+        onClick={() => {
+          setIsDrawerOpen(true);
+        }}
+        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12 font-bold text-lg"
       >
-        M
+        {userDetail &&
+          userDetail.name[0].toUpperCase() +
+            userDetail.name.split(" ")[1][0].toUpperCase()}
       </button>
-      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <Drawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        setUser={setUser}
+      />
       <EstablishmentPopup
         isOpen={isEstablishmentPopupOpen}
         onClose={() => setIsEstablishmentPopupOpen(false)}
+        target={target}
       />
-      <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
-        <SidePanel />
-      </div>
+      <SidePanel map={map}/>
+      {/* map.setView([ 9.03, 38.74], 20, { animate: true, duration: 2}); */}
       {!isAuthenticated && (
         <AuthPopup
           onClose={() => {

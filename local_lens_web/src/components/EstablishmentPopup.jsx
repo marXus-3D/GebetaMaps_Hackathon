@@ -1,22 +1,68 @@
 import { useState } from "react";
+import app, { db } from "../firebase-config";
+import { collection, addDoc } from 'firebase/firestore';
+import { init } from "@thetsf/geofirex";
 
-function EstablishmentPopup({ isOpen, onClose }) {
+const geo = init(app);
+
+function EstablishmentPopup({ isOpen, onClose, target }) {
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [images, setImages] = useState([]);
+
+  function generateRandomId() {
+    return 'id-' + Math.random().toString(36).substr(2, 9);
+  }
+  
+
+  const submitReview = async (review) => {
+    try {
+      // const geohash = geofirex.geohashForLocation(new geofirex.GeoPoint(target.lat, target.lon));
+      console.log("target", target);
+      const geohash = geo.point(target.lat, target.lng);
+      const docRef = await addDoc(collection(db, "locations"), {
+        geohash,
+        id: generateRandomId(),
+        latitude: target.lat,
+        longitude: target.lng,
+        name: review.name,
+        type: review.type,
+      });
+    }catch (error){
+      console.log(error);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Submitted:", { name, type, rating, comment });
+    console.log("Submitted:", { name, type, rating, comment, images });
+    submitReview({ name, type, rating, comment, images });
     onClose();
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (images.length + files.length > 6) {
+      alert("You can only upload up to 6 images");
+      return;
+    }
+    const newImages = files.map((file) => URL.createObjectURL(file));
+    setImages([...images, ...newImages]);
+  };
+
+  const removeImage = (index) => {
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    setImages(newImages);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-h-screen overflow-y-auto relative">
         <h2 className="text-2xl font-bold mb-4">Add Establishment</h2>
         <form onSubmit={handleSubmit}>
           <input
@@ -64,6 +110,34 @@ function EstablishmentPopup({ isOpen, onClose }) {
             className="w-full p-2 mb-4 border rounded"
             rows="3"
           ></textarea>
+          <div className="mb-4">
+            <label className="block mb-2">Upload Images (max 6):</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {images.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Uploaded ${index + 1}`}
+                  className="w-full h-24 object-cover rounded"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
           <button
             type="submit"
             className="w-full bg-blue-500 text-white p-2 rounded mb-4"
@@ -73,9 +147,17 @@ function EstablishmentPopup({ isOpen, onClose }) {
         </form>
         <button
           onClick={onClose}
-          className="w-full bg-gray-300 text-gray-700 p-2 rounded"
+          className="aspect-square absolute right-2 top-2 shadow-2xl"
         >
-          Cancel
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 384 512"
+            fill="#101010"
+            width="14px"
+            height="14px"
+          >
+            <path d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z" />
+          </svg>
         </button>
       </div>
     </div>
