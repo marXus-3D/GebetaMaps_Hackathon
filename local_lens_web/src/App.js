@@ -10,7 +10,14 @@ import MapComponent from "./components/MapComponent";
 import EstablishmentPopup from "./components/EstablishmentPopup";
 import SidePanel from "./components/SidePanel";
 import "leaflet/dist/leaflet.css";
+import L, { Map } from "leaflet";
+import Layout from "./components/Layout/Layout";
+import Drawer from "./components/Drawer";
 
+const auth = app.auth();
+const provider = new GoogleAuthProvider();
+
+// Set a default position (latitude, longitude)
 function AuthPopup({ onClose, setUser }) {
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
@@ -160,45 +167,6 @@ function AuthPopup({ onClose, setUser }) {
   );
 }
 
-function Drawer({ isOpen, onClose, setUser }) {
-  return (
-    <div
-      className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      } transition-transform duration-300 ease-in-out z-20`}
-    >
-      <div className="p-4">
-        <h2 className="text-2xl font-bold mb-4">Menu</h2>
-        <ul>
-          <li className="mb-2">
-            <button className="text-blue-500">Home</button>
-          </li>
-          <li className="mb-2">
-            <button className="text-blue-500">Profile</button>
-          </li>
-          <li className="mb-2">
-            <button className="text-blue-500">Settings</button>
-          </li>
-        </ul>
-      </div>
-      <button
-        onClick={onClose}
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-      >
-        ✕
-      </button>
-      <button
-        className="absolute bottom-1 right-2 text-red-400 underline font-semibold"
-        onClick={() => {
-          auth.signOut();
-        }}
-      >
-        Log Out
-      </button>
-    </div>
-  );
-}
-
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -278,7 +246,7 @@ function App() {
   };
 
   return (
-    <div className="w-full h-screen relative">
+    <Layout children={<div className="w-full h-screen relative">
       <div className="h-full w-full relative z-0">
         {/* <Map /> */}
         <MapComponent
@@ -296,7 +264,7 @@ function App() {
       >
         {userDetail &&
           userDetail.name[0].toUpperCase() +
-            userDetail.name.split(" ")[1][0].toUpperCase()}
+          userDetail.name.split(" ")[1][0].toUpperCase()}
       </button>
       <Drawer
         isOpen={isDrawerOpen}
@@ -308,7 +276,7 @@ function App() {
         onClose={() => setIsEstablishmentPopupOpen(false)}
         target={target}
       />
-      <SidePanel map={map}/>
+      <SidePanel map={map} />
       {/* map.setView([ 9.03, 38.74], 20, { animate: true, duration: 2}); */}
       {!isAuthenticated && (
         <AuthPopup
@@ -318,7 +286,7 @@ function App() {
           setUser={setUser}
         />
       )}
-    </div>
+    </div>} />
   );
 }
 
