@@ -11,6 +11,7 @@ import SidePanel from "./components/SidePanel";
 import "leaflet/dist/leaflet.css";
 import L, { Map } from "leaflet";
 import Layout from "./components/Layout/Layout";
+import Drawer from "./components/Drawer";
 
 const auth = app.auth();
 const provider = new GoogleAuthProvider();
@@ -28,10 +29,9 @@ function AuthPopup({ onClose, setUser }) {
     e.preventDefault();
     // Handle authentication logic here
     console.log("Submitted:", { email, password, isSignUp });
-    if(isSignUp)
-    {
+    if (isSignUp) {
       SignUpByEmail(email, password);
-    }else {
+    } else {
       SignInByEmail(email, password);
     }
     onClose();
@@ -82,7 +82,6 @@ function AuthPopup({ onClose, setUser }) {
     }
   };
 
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur z-50">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96 transition-all">
@@ -123,10 +122,13 @@ function AuthPopup({ onClose, setUser }) {
             {isSignUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
-        <button className="w-full bg-red-500 text-white p-2 rounded mb-4" onClick={() => {
-          signInByGoogle();
-          onClose();
-        }}>
+        <button
+          className="w-full bg-red-500 text-white p-2 rounded mb-4"
+          onClick={() => {
+            signInByGoogle();
+            onClose();
+          }}
+        >
           Sign in with Google
         </button>
         <p className="text-center">
@@ -142,38 +144,6 @@ function AuthPopup({ onClose, setUser }) {
     </div>
   );
 }
-
-function Drawer({ isOpen, onClose }) {
-  return (
-    <div
-      className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      } transition-transform duration-300 ease-in-out z-20`}
-    >
-      <div className="p-4">
-        <h2 className="text-2xl font-bold mb-4">Menu</h2>
-        <ul>
-          <li className="mb-2">
-            <button className="text-blue-500">Home</button>
-          </li>
-          <li className="mb-2">
-            <button className="text-blue-500">Profile</button>
-          </li>
-          <li className="mb-2">
-            <button className="text-blue-500">Settings</button>
-          </li>
-        </ul>
-      </div>
-      <button
-        onClick={onClose}
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-      >
-        ✕
-      </button>
-    </div>
-  );
-}
-
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -222,11 +192,32 @@ function App() {
   };
 
   return (
+    // <Layout children={<div className="w-full h-screen relative">
+    //   <MapComponent addEstablishment={setIsEstablishmentPopupOpen} />
+    //   <button
+    //     onClick={() => setIsDrawerOpen(true)}
+    //     className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
+    //   >
+    //     M
+    //   </button>
+    //   <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+    //   <EstablishmentPopup
+    //     isOpen={isEstablishmentPopupOpen}
+    //     onClose={() => setIsEstablishmentPopupOpen(false)}
+    //   />
+    //   <SidePanel />
+    //   {!isAuthenticated && (
+    //     <AuthPopup
+    //       onClose={() => {
+    //         user == null ? setIsAuthenticated(false) : setIsAuthenticated(true);
+    //       }}
+    //       setUser={setUser}
+    //     />
+    //   )}
+    // </div>} />
+    //Use either of them
     <div className="w-full h-screen relative">
-      <div className="h-full w-full relative z-0">
-        {/* <Map /> */}
-        <MapComponent addEstablishment={setIsEstablishmentPopupOpen} />
-      </div>
+      <MapComponent addEstablishment={setIsEstablishmentPopupOpen} />
       <button
         onClick={() => setIsDrawerOpen(true)}
         className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12"
@@ -238,9 +229,7 @@ function App() {
         isOpen={isEstablishmentPopupOpen}
         onClose={() => setIsEstablishmentPopupOpen(false)}
       />
-      <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
-        <SidePanel />
-      </div>
+      <SidePanel />
       {!isAuthenticated && (
         <AuthPopup
           onClose={() => {

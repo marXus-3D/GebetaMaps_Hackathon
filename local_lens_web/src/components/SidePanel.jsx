@@ -1,60 +1,61 @@
 import { useState } from "react";
 
 function SidePanel() {
-    const [activeTab, setActiveTab] = useState("places");
-  
-    const placeholderPlaces = [
-      { name: "Coffee Shop", distance: "0.2 km" },
-      { name: "Park", distance: "0.5 km" },
-      { name: "Grocery Store", distance: "0.8 km" },
-      { name: "Restaurant", distance: "1.2 km" },
-      { name: "Gym", distance: "1.5 km" },
-    ];
-  
-    const placeholderPeople = [
-      { name: "John Doe", distance: "0.3 km" },
-      { name: "Jane Smith", distance: "0.7 km" },
-      { name: "Mike Johnson", distance: "1.0 km" },
-      { name: "Emily Brown", distance: "1.4 km" },
-    ];
-  
-    const placeholderEvents = [
-      { name: "Local Concert", distance: "0.5 km", date: "2024-11-15" },
-      { name: "Art Exhibition", distance: "0.9 km", date: "2024-11-20" },
-      { name: "Food Festival", distance: "1.3 km", date: "2024-11-25" },
-      { name: "Charity Run", distance: "1.8 km", date: "2024-11-30" },
-    ];
-  
-    const renderContent = () => {
-      switch (activeTab) {
-        case "places":
-          return placeholderPlaces.map((place, index) => (
-            <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
-              <p className="font-semibold">{place.name}</p>
-              <p className="text-sm text-gray-600">Distance: {place.distance}</p>
-            </li>
-          ));
-        case "people":
-          return placeholderPeople.map((person, index) => (
-            <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
-              <p className="font-semibold">{person.name}</p>
-              <p className="text-sm text-gray-600">Distance: {person.distance}</p>
-            </li>
-          ));
-        case "events":
-          return placeholderEvents.map((event, index) => (
-            <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
-              <p className="font-semibold">{event.name}</p>
-              <p className="text-sm text-gray-600">Distance: {event.distance}</p>
-              <p className="text-sm text-gray-600">Date: {event.date}</p>
-            </li>
-          ));
-        default:
-          return null;
-      }
-    };
-  
-    return (
+  const [activeTab, setActiveTab] = useState("places");
+
+  const placeholderPlaces = [
+    { name: "Coffee Shop", distance: "0.2 km" },
+    { name: "Park", distance: "0.5 km" },
+    { name: "Grocery Store", distance: "0.8 km" },
+    { name: "Restaurant", distance: "1.2 km" },
+    { name: "Gym", distance: "1.5 km" },
+  ];
+
+  const placeholderPeople = [
+    { name: "John Doe", distance: "0.3 km" },
+    { name: "Jane Smith", distance: "0.7 km" },
+    { name: "Mike Johnson", distance: "1.0 km" },
+    { name: "Emily Brown", distance: "1.4 km" },
+  ];
+
+  const placeholderEvents = [
+    { name: "Local Concert", distance: "0.5 km", date: "2024-11-15" },
+    { name: "Art Exhibition", distance: "0.9 km", date: "2024-11-20" },
+    { name: "Food Festival", distance: "1.3 km", date: "2024-11-25" },
+    { name: "Charity Run", distance: "1.8 km", date: "2024-11-30" },
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "places":
+        return placeholderPlaces.map((place, index) => (
+          <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
+            <p className="font-semibold">{place.name}</p>
+            <p className="text-sm text-gray-600">Distance: {place.distance}</p>
+          </li>
+        ));
+      case "people":
+        return placeholderPeople.map((person, index) => (
+          <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
+            <p className="font-semibold">{person.name}</p>
+            <p className="text-sm text-gray-600">Distance: {person.distance}</p>
+          </li>
+        ));
+      case "events":
+        return placeholderEvents.map((event, index) => (
+          <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
+            <p className="font-semibold">{event.name}</p>
+            <p className="text-sm text-gray-600">Distance: {event.distance}</p>
+            <p className="text-sm text-gray-600">Date: {event.date}</p>
+          </li>
+        ));
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="rounded-lg w-1/4 bg-white shadow-2xl absolute right-7 top-28 z-10">
       <div className="rounded-lg bg-white p-4 overflow-y-auto h-full flex flex-col">
         <div className="flex mb-4">
           <button
@@ -114,7 +115,8 @@ function SidePanel() {
         </h2>
         <ul className="flex-grow overflow-y-auto">{renderContent()}</ul>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  export default SidePanel;
+export default SidePanel;
