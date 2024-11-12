@@ -13,8 +13,8 @@ import "leaflet/dist/leaflet.css";
 import L, { Map } from "leaflet";
 import Layout from "./components/Layout/Layout";
 import Drawer from "./components/Drawer";
+import ReviewPopUp from "./components/ReviewPopUp";
 
-const auth = app.auth();
 const provider = new GoogleAuthProvider();
 
 // Set a default position (latitude, longitude)
@@ -172,6 +172,7 @@ function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEstablishmentPopupOpen, setIsEstablishmentPopupOpen] =
     useState(false);
+  const [isReviewPopupOpen, setIsReviewPopupOpen] = useState(false);
 
   const [user, setUser] = useState(null);
   const [target, setTarget] = useState(null);
@@ -246,47 +247,61 @@ function App() {
   };
 
   return (
-    <Layout children={<div className="w-full h-screen relative">
-      <div className="h-full w-full relative z-0">
-        {/* <Map /> */}
-        <MapComponent
-          addEstablishment={setIsEstablishmentPopupOpen}
-          target={setTarget}
-          map={map}
-          setMap={setMap}
-        />
-      </div>
-      <button
-        onClick={() => {
-          setIsDrawerOpen(true);
-        }}
-        className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12 font-bold text-lg"
-      >
-        {userDetail &&
-          userDetail.name[0].toUpperCase() +
-          userDetail.name.split(" ")[1][0].toUpperCase()}
-      </button>
-      <Drawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        setUser={setUser}
-      />
-      <EstablishmentPopup
-        isOpen={isEstablishmentPopupOpen}
-        onClose={() => setIsEstablishmentPopupOpen(false)}
-        target={target}
-      />
-      <SidePanel map={map} />
-      {/* map.setView([ 9.03, 38.74], 20, { animate: true, duration: 2}); */}
-      {!isAuthenticated && (
-        <AuthPopup
-          onClose={() => {
-            user == null ? setIsAuthenticated(false) : setIsAuthenticated(true);
-          }}
-          setUser={setUser}
-        />
-      )}
-    </div>} />
+    <Layout
+      children={
+        <div className="w-full h-screen relative">
+          <div className="h-full w-full relative z-0">
+            {/* <Map /> */}
+            <MapComponent
+              addEstablishment={setIsEstablishmentPopupOpen}
+              addReview={setIsReviewPopupOpen}
+              target={setTarget}
+              map={map}
+              setMap={setMap}
+            />
+          </div>
+          <button
+            onClick={() => {
+              setIsDrawerOpen(true);
+            }}
+            className="absolute top-4 left-12 bg-black text-white p-2 rounded-full shadow-lg z-10 aspect-square w-12 h-12 font-bold text-lg"
+          >
+            {userDetail &&
+              userDetail.name[0].toUpperCase() +
+                userDetail.name.split(" ")[1][0].toUpperCase()}
+          </button>
+          <Drawer
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
+            setUser={setUser}
+          />
+          <EstablishmentPopup
+            isOpen={isEstablishmentPopupOpen}
+            onClose={() => setIsEstablishmentPopupOpen(false)}
+            target={target}
+            user={userDetail}
+          />
+          <ReviewPopUp
+            isOpen={isReviewPopupOpen}
+            onClose={() => setIsReviewPopupOpen(false)}
+            target={target}
+            user={userDetail}
+          />
+          <SidePanel map={map} />
+          {/* map.setView([ 9.03, 38.74], 20, { animate: true, duration: 2}); */}
+          {!isAuthenticated && (
+            <AuthPopup
+              onClose={() => {
+                user == null
+                  ? setIsAuthenticated(false)
+                  : setIsAuthenticated(true);
+              }}
+              setUser={setUser}
+            />
+          )}
+        </div>
+      }
+    />
   );
 }
 

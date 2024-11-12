@@ -24,7 +24,7 @@ const ico = L.divIcon({
   iconAnchor: [16, 16],
 });
 
-const MapComponent = ({ addEstablishment, target, map, setMap }) => {
+const MapComponent = ({ addEstablishment, target, map, setMap, addReview }) => {
   const [currentPosition, setCurrentLocation] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [locationError, setLocationError] = useState(null);
@@ -51,25 +51,42 @@ const MapComponent = ({ addEstablishment, target, map, setMap }) => {
       setLocationError("Geolocation is not supported by this browser.");
     }
   }, []);
-
   useEffect(() => {
-    if (currentPosition) {
-      const locations = collection(db, "locations");
-      const center = geo.point(currentPosition[0], currentPosition[1]);
-      const radius = 5; // 10 Kmeters
-      const field = "geohash";
+    const getLocationFromFirebase = async () => {
+      db.collection("locations")
+        .get()
+        .then((querySnapshot) => {
+          querySnapshot.forEach((doc) => {
+            console.log(doc.id, "=>", doc.data());
+            setMarkers([...markers, doc.data()]);
+          });
+        })
+        .catch((error) => {
+          console.error("Error getting documents: ", error);
+        });
+    };
 
-      const firestoreRef = db
-        .collection("cities")
-        .where("name", "!=", "Phoenix");
-      const geoRef = geo.query(firestoreRef);
-      // console.log("query results", query);
+    getLocationFromFirebase();
+  }, []);
 
-      const query = geoRef.within(center, radius, field);
+  // useEffect(() => {
+  //   if (currentPosition) {
+  //     const locations = collection(db, "locations");
+  //     const center = geo.point(currentPosition[0], currentPosition[1]);
+  //     const radius = 5; // 10 Kmeters
+  //     const field = "geohash";
 
-      query.subscribe((hits) => console.log(hits));
-    }
-  }, [currentPosition]);
+  //     const firestoreRef = db
+  //       .collection("cities")
+  //       .where("name", "!=", "Phoenix");
+  //     const geoRef = geo.query(firestoreRef);
+  //     // console.log("query results", query);
+
+  //     const query = geoRef.within(center, radius, field);
+
+  //     query.subscribe((hits) => console.log(hits));
+  //   }
+  // }, [currentPosition]);
 
   const handleMapClick = (event) => {
     const { lat, lng } = event.latlng; // Get the latitude and longitude of the click
@@ -188,6 +205,25 @@ const MapComponent = ({ addEstablishment, target, map, setMap }) => {
             icon={ico}
             title="Current Location"
           >
+            {markers.map((marker, idx) => (
+              <Marker
+                position={[marker.latitude, marker.longitude]}
+                icon={ico}
+                title={marker.name}
+                eventHandlers={ {click: (e) => {
+                  target({lat: marker.latitude, lng: marker.longitude, name: marker.name, type: marker.type, id: marker.id});
+                  addReview(true);
+                }}}
+                key={idx}
+              >
+                <Popup>
+                  <div className="flex flex-col">
+                    <h4>{marker.name}</h4>
+                    <p>{marker.type}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
             <Popup>Current Location</Popup>
           </Marker>
         </MapContainer>

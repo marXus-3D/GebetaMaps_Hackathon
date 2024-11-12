@@ -1,61 +1,43 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import app, { db, auth } from "../firebase-config";
-import { collection, addDoc } from 'firebase/firestore';
-import { init } from "@thetsf/geofirex";
+import { collection, addDoc } from "firebase/firestore";
 
-const geo = init(app);
-
-function EstablishmentPopup({ isOpen, onClose, target, user }) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("");
+function ReviewPopUp({ isOpen, onClose, target, user }) {
+  const [name, setName] = useState(target != null ? target.name : "");
+  const [type, setType] = useState(target != null ? target.type : "");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [images, setImages] = useState([]);
 
-  function generateRandomId() {
-    return 'id-' + Math.random().toString(36).substr(2, 9);
-  }
-  
-
-  const submitEstablishment = async (review) => {
-    try {
-      // const geohash = geofirex.geohashForLocation(new geofirex.GeoPoint(target.lat, target.lon));
-      console.log("target", target);
-      const geohash = geo.point(target.lat, target.lng);
-      const docRef = await addDoc(collection(db, "locations"), {
-        geohash,
-        id: review.id,
-        latitude: target.lat,
-        longitude: target.lng,
-        name: review.name,
-        type: review.type,
-      });
-    }catch (error){
-      console.log(error);
+  useEffect(() => {
+    if (target) {
+      setName(target.name);
+      setType(target.type);
     }
-  };
+  }, [target]);
+
+  function generateRandomId() {
+    return "id-" + Math.random().toString(36).substr(2, 9);
+  }
 
   const submitReview = async (review) => {
     try {
       const docRef = await addDoc(collection(db, "reviews"), {
-        id: review.id,
+        id: target.id,
         name: user.name,
         uid: user.uid,
         comment: review.comment,
         rating: review.rating,
       });
-    }catch (error){
+    } catch (error) {
       console.log(error);
     }
   };
 
-
-
   const handleSubmit = (e) => {
     e.preventDefault();
     const id = generateRandomId();
-    console.log("Submitted:", { name, type, rating, comment, images });
-    submitEstablishment({ id, name, type, rating, comment, images });
+    console.log("Submitted:", { name, type, rating, comment, images }, user);
     submitReview({ id, name, type, rating, comment, images });
     onClose();
   };
@@ -81,7 +63,7 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-h-screen overflow-y-auto relative">
-        <h2 className="text-2xl font-bold mb-4">Add Establishment</h2>
+        <h2 className="text-2xl font-bold mb-4">Add Review</h2>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -89,12 +71,14 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full p-2 mb-4 border rounded"
+            readOnly
             required
           />
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
             className="w-full p-2 mb-4 border rounded"
+            disabled
             required
           >
             <option value="">Select Type</option>
@@ -182,4 +166,4 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
   );
 }
 
-export default EstablishmentPopup;
+export default ReviewPopUp;
