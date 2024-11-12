@@ -10,7 +10,13 @@ import MapComponent from "./components/MapComponent";
 import EstablishmentPopup from "./components/EstablishmentPopup";
 import SidePanel from "./components/SidePanel";
 import "leaflet/dist/leaflet.css";
+import L, { Map } from "leaflet";
+import Layout from "./components/Layout/Layout";
 
+const auth = app.auth();
+const provider = new GoogleAuthProvider();
+
+// Set a default position (latitude, longitude)
 function AuthPopup({ onClose, setUser }) {
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
