@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import app, { db, auth } from "../firebase-config";
+import app, { db, storage } from "../firebase-config";
 import { collection, addDoc } from "firebase/firestore";
 
 function ReviewPopUp({ isOpen, onClose, target, user }) {
@@ -8,6 +8,8 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [images, setImages] = useState([]);
+  const [imageFiles, setImagesFiles] = useState([]);
+  const [imgUrl, setImgUrl] = useState([]);
 
   useEffect(() => {
     if (target) {
@@ -20,25 +22,182 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
     return "id-" + Math.random().toString(36).substr(2, 9);
   }
 
+  //   const submitReview = async (review) => {
+  //     try {
+  //       //   const imgs = [];
+  //       //   imageFiles.forEach(async (img) => {
+  //       //     imgs.push(await uploadImage(img));
+  //       //   });
+  //       //   const docRef = await addDoc(collection(db, "reviews"), {
+  //       //     id: target.id,
+  //       //     name: user.name,
+  //       //     uid: user.uid,
+  //       //     comment: review.comment,
+  //       //     rating: review.rating,
+  //       //     images: imgUrl,
+  //       //   });
+  //       //   const imgs = await Promise.all(imageFiles.map((img) => uploadImage(img)));
+  //       //   const docRef = await addDoc(collection(db, "reviews"), {
+  //       //     id: target.id,
+  //       //     name: user.name,
+  //       //     uid: user.uid,
+  //       //     comment: review.comment,
+  //       //     rating: review.rating,
+  //       //     images: imgs, // Assuming imgs contains the uploaded image URLs
+  //       //   });
+
+  //       const uploadPromises = imageFiles.map(async (img) => {
+  //         return await uploadImage(img);
+  //       });
+
+  //       // Wait for all image uploads to finish
+  //       const imgUrls = await Promise.all(uploadPromises);
+
+  //       // Now, proceed to add the review to the database
+  //       const docRef = await addDoc(collection(db, "reviews"), {
+  //         id: target.id,
+  //         name: user.name,
+  //         uid: user.uid,
+  //         comment: review.comment,
+  //         rating: review.rating,
+  //         images: imgUrls, // imgUrls will be an array of image URLs
+  //       });
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+
+  //   async function uploadImage(image) {
+  //     if (image) {
+  //       const uploadTask = storage.ref(`review-post/${image.name}`).put(image);
+  //       console.log("Uploading", image);
+
+  //       uploadTask.on(
+  //         "state_changed",
+  //         (snapshot) => {
+  //           // Progress function
+  //           const progress = Math.round(
+  //             (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+  //           );
+  //           //   setProgress(progress);
+  //         },
+  //         (error) => {
+  //           // Error function
+  //           console.log(error);
+  //         },
+  //         () => {
+  //           // Complete function
+  //           uploadTask.snapshot.ref.getDownloadURL().then((url) => {
+  //             // setUrl(url);
+  //             // handleUser({ ppic: url });
+  //             setImgUrl([...imgUrl, url]);
+  //             console.log("File available at", url);
+  //             return url;
+  //           });
+  //         }
+  //       );
+  //     }
+  //   }
+
   const submitReview = async (review) => {
     try {
+      // Log the image files to check they are being passed correctly
+      console.log("Image files: ", imageFiles);
+
+      // Create an array of promises for image uploads
+      const uploadPromises = imageFiles.map(async (img) => {
+        try {
+          // Log the image being uploaded
+          console.log("Uploading image: ", img);
+
+          // Upload the image and get the URL
+          const imgUrl = await uploadImage(img);
+
+          // Log the URL returned by the upload
+          console.log("Uploaded image URL: ", imgUrl);
+
+          // Return the image URL to be collected in the Promise.all() array
+          return imgUrl;
+        } catch (err) {
+          console.error("Error uploading image: ", err);
+          throw new Error("Image upload failed");
+        }
+      });
+
+      // Wait for all images to be uploaded and get the array of URLs
+      const imgUrls = await Promise.all(uploadPromises);
+
+      // Log the image URLs array
+      console.log("All image URLs: ", imgUrls);
+
+      // Proceed to add the review to the database
       const docRef = await addDoc(collection(db, "reviews"), {
         id: target.id,
         name: user.name,
         uid: user.uid,
         comment: review.comment,
         rating: review.rating,
+        images: imgUrls, // Use the image URLs returned from uploads
       });
+
+      console.log("Review submitted with ID: ", docRef.id);
     } catch (error) {
-      console.log(error);
+      console.error("Error submitting review: ", error);
     }
   };
 
-  const handleSubmit = (e) => {
+  async function uploadImage(image) {
+    if (image) {
+      // Return a Promise to ensure async/await works correctly
+      return new Promise((resolve, reject) => {
+        const uploadTask = storage.ref(`review-post/${image.name}`).put(image);
+        console.log("Uploading", image);
+
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            // Progress function (optional to show progress)
+            const progress = Math.round(
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            );
+            // You can use this to update a progress bar or show the upload status
+          },
+          (error) => {
+            // Error function
+            console.log(error);
+            reject(error); // Reject the promise on error
+          },
+          () => {
+            // Complete function
+            uploadTask.snapshot.ref
+              .getDownloadURL()
+              .then((url) => {
+                console.log("File available at", url);
+                resolve(url); // Resolve the promise with the URL
+              })
+              .catch((error) => {
+                reject(error); // Reject if getDownloadURL fails
+              });
+          }
+        );
+      });
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const id = generateRandomId();
     console.log("Submitted:", { name, type, rating, comment, images }, user);
-    submitReview({ id, name, type, rating, comment, images });
+    // imageFiles.forEach(async (img) => {
+    //   await uploadImage(img);
+    // });
+    await submitReview({ id, name, type, rating, comment, images });
+    // const uploadPromises = imageFiles.map(async (img) => {
+    //   await uploadImage(img);
+    // });
+
+    // await Promise.all(uploadPromises);
+    // await submitReview({ id, name, type, rating, comment, images });
     onClose();
   };
 
@@ -50,6 +209,7 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
     }
     const newImages = files.map((file) => URL.createObjectURL(file));
     setImages([...images, ...newImages]);
+    setImagesFiles([...imageFiles, ...files]);
   };
 
   const removeImage = (index) => {
