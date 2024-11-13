@@ -9,7 +9,8 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
   const [comment, setComment] = useState("");
   const [images, setImages] = useState([]);
   const [imageFiles, setImagesFiles] = useState([]);
-  const [imgUrl, setImgUrl] = useState([]);
+  //   const [imgUrl, setImgUrl] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (target) {
@@ -141,6 +142,14 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
       });
 
       console.log("Review submitted with ID: ", docRef.id);
+      setName('');
+      setType('');
+      setRating(0);
+      setComment("");
+      setImages([]);
+      setImagesFiles([]);
+      setUploading(false);
+
     } catch (error) {
       console.error("Error submitting review: ", error);
     }
@@ -186,6 +195,9 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (uploading) return;
+    else setUploading(true);
+
     const id = generateRandomId();
     console.log("Submitted:", { name, type, rating, comment, images }, user);
     // imageFiles.forEach(async (img) => {
@@ -302,9 +314,47 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded mb-4"
+            className="w-full bg-blue-500 text-white p-2 rounded mb-4 flex justify-center items-center"
           >
-            Submit
+            {uploading ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="xMidYMid"
+                style={{
+                  shapeRendering: "auto",
+                  display: "block",
+                  background: "transparent",
+                }}
+                width="40px"
+                height="40px"
+              >
+                <g>
+                  <circle
+                    stroke-linecap="round"
+                    fill="none"
+                    stroke-dasharray="50.26548245743669 50.26548245743669"
+                    stroke="#fff"
+                    stroke-width="8"
+                    r="32"
+                    cy="50"
+                    cx="50"
+                  >
+                    <animateTransform
+                      values="0 50 50;360 50 50"
+                      keyTimes="0;1"
+                      dur="1s"
+                      repeatCount="indefinite"
+                      type="rotate"
+                      attributeName="transform"
+                    ></animateTransform>
+                  </circle>
+                  <g></g>
+                </g>
+              </svg>
+            ) : (
+              "Submit"
+            )}
           </button>
         </form>
         <button

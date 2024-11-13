@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "../firebase-config";
 
-function SidePanel({ map }) {
+function SidePanel({ map, target }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("places");
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -9,6 +11,72 @@ function SidePanel({ map }) {
   const [nearbyGebetaSearch, setNearbyGebeta] = useState(null);
 
   const [navigateCoord, setNavigateCoor] = useState();
+  const [reviews, setReviews] = useState([]);
+  const [isReviewLoading, setIsReviewLoading] = useState(true);
+  // const placeholderReviews = [
+  //   {
+  //     place: "Coffee Shop",
+  //     user: "John",
+  //     rating: 4,
+  //     comment: "Great coffee and atmosphere!",
+  //   },
+  //   {
+  //     place: "Restaurant",
+  //     user: "Alice",
+  //     rating: 5,
+  //     comment: "Delicious food and excellent service.",
+  //   },
+  //   {
+  //     place: "Bookstore",
+  //     user: "Bob",
+  //     rating: 4,
+  //     comment: "Wide selection of books, friendly staff.",
+  //   },
+  //   {
+  //     place: "Bakery",
+  //     user: "Emma",
+  //     rating: 5,
+  //     comment: "The best croissants in town!",
+  //   },
+  //   {
+  //     place: "Grocery Store",
+  //     user: "David",
+  //     rating: 3,
+  //     comment: "Decent selection, but a bit pricey.",
+  //   },
+  // ];
+
+  useEffect(() => {
+    const unsubscribe = async () => {
+      try {
+        const q = query(
+          collection(db, "reviews"),
+          where("id", "==", target.id)
+        );
+
+        const snapshots = await getDocs(q);
+        snapshots.forEach((doc) => {
+          // doc.data() is never undefined for query doc snapshots
+          console.log(doc.id, " => ", doc.data());
+          setReviews([...reviews, doc.data()]);
+        });
+      } catch (error) {
+        console.log(error);
+      }finally{
+        setIsReviewLoading(false);
+      }
+    };
+
+    if (target && target.id) {
+      console.log("this the target", target);
+      setIsReviewLoading(true);
+      setActiveTab("reviews");
+      unsubscribe();
+      // return () => unsubscribe();
+    } else {
+      setActiveTab("places");
+    }
+  }, [target]);
 
   const placeholderPlaces = [
     { name: "Coffee Shop", distance: "0.2 km", reviewed: true, rating: 4.5 },
@@ -198,7 +266,12 @@ function SidePanel({ map }) {
         <li
           key={index}
           className="mb-2 p-2 bg-gray-100 rounded cursor-pointer hover:bg-gray-300 transition-colors"
-          onClick={ () => map.setView([place.latitude, place.longitude], 20, { animate: true, duration: 2})}
+          onClick={() =>
+            map.setView([place.latitude, place.longitude], 20, {
+              animate: true,
+              duration: 2,
+            })
+          }
         >
           <p className="font-semibold">{place.name}</p>
           <p className="text-sm text-gray-600">Distance: 1.0km</p>
@@ -252,6 +325,57 @@ function SidePanel({ map }) {
             <p className="text-sm text-gray-600">Date: {event.date}</p>
           </li>
         ));
+      case "reviews":
+        return isReviewLoading ? (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="xMidYMid"
+            style={{
+              shapeRendering: "auto",
+              display: "block",
+              background: "transparent",
+            }}
+            width="100px"
+            height="100px"
+          >
+            <g>
+              <circle
+                stroke-linecap="round"
+                fill="none"
+                strokeDasharray="50.26548245743669 50.26548245743669"
+                stroke="#000"
+                strokeWidth="8"
+                r="32"
+                cy="50"
+                cx="50"
+              >
+                <animateTransform
+                  values="0 50 50;360 50 50"
+                  keyTimes="0;1"
+                  dur="1s"
+                  repeatCount="indefinite"
+                  type="rotate"
+                  attributeName="transform"
+                ></animateTransform>
+              </circle>
+              <g></g>
+            </g>
+          </svg>
+        ) : reviews.length < 1 ? (
+          <li>
+            <p>There are no reviews why don't you add yours.</p>
+          </li>
+        ) : (
+          reviews.map((review, index) => (
+            <li key={index} className="mb-4 p-3 bg-gray-100 rounded">
+              <p className="font-semibold">{review.place}</p>
+              <p className="text-sm text-gray-600">User: {review.name}</p>
+              <p className="text-sm text-blue-600">Rating: {review.rating}/5</p>
+              <p className="text-sm mt-1">{review.comment}</p>
+            </li>
+          ))
+        );
       default:
         return null;
     }
@@ -332,6 +456,27 @@ function SidePanel({ map }) {
             </svg>
             Events
           </button>
+          {target && (
+            <button
+              className={`flex-1 py-2 ${
+                activeTab === "reviews"
+                  ? "bg-gray-700 text-white"
+                  : "bg-gray-200"
+              } flex flex-col justify-center items-center`}
+              onClick={() => setActiveTab("reviews")}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 384 512"
+                width="32px"
+                height="32px"
+                fill={activeTab === "reviews" ? "#fff" : "#000"}
+              >
+                <path d="M14 2.2C22.5-1.7 32.5-.3 39.6 5.8L80 40.4 120.4 5.8c9-7.7 22.3-7.7 31.2 0L192 40.4 232.4 5.8c9-7.7 22.3-7.7 31.2 0L304 40.4 344.4 5.8c7.1-6.1 17.1-7.5 25.6-3.6s14 12.4 14 21.8l0 464c0 9.4-5.5 17.9-14 21.8s-18.5 2.5-25.6-3.6L304 471.6l-40.4 34.6c-9 7.7-22.3 7.7-31.2 0L192 471.6l-40.4 34.6c-9 7.7-22.3 7.7-31.2 0L80 471.6 39.6 506.2c-7.1 6.1-17.1 7.5-25.6 3.6S0 497.4 0 488L0 24C0 14.6 5.5 6.1 14 2.2zM96 144c-8.8 0-16 7.2-16 16s7.2 16 16 16l192 0c8.8 0 16-7.2 16-16s-7.2-16-16-16L96 144zM80 352c0 8.8 7.2 16 16 16l192 0c8.8 0 16-7.2 16-16s-7.2-16-16-16L96 336c-8.8 0-16 7.2-16 16zM96 240c-8.8 0-16 7.2-16 16s7.2 16 16 16l192 0c8.8 0 16-7.2 16-16s-7.2-16-16-16L96 240z" />
+              </svg>
+              Reviews
+            </button>
+          )}
         </div>
         <h2 className="text-xl font-bold mb-4">
           Nearby {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}

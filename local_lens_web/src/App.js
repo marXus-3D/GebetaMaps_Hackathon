@@ -277,17 +277,23 @@ function App() {
           />
           <EstablishmentPopup
             isOpen={isEstablishmentPopupOpen}
-            onClose={() => setIsEstablishmentPopupOpen(false)}
+            onClose={() => {
+              setIsEstablishmentPopupOpen(false);
+              setTarget(null);
+            }}
             target={target}
             user={userDetail}
           />
           <ReviewPopUp
             isOpen={isReviewPopupOpen}
-            onClose={() => setIsReviewPopupOpen(false)}
+            onClose={() => {
+              setIsReviewPopupOpen(false);
+              setTarget(null);
+            }}
             target={target}
             user={userDetail}
           />
-          <SidePanel map={map} />
+          <SidePanel map={map} target={target} />
           {/* map.setView([ 9.03, 38.74], 20, { animate: true, duration: 2}); */}
           {!isAuthenticated && (
             <AuthPopup
