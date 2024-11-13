@@ -1,6 +1,6 @@
 import { useState } from "react";
-import app, { db, auth } from "../firebase-config";
-import { collection, addDoc } from 'firebase/firestore';
+import app, { db, storage } from "../firebase-config";
+import { collection, addDoc } from "firebase/firestore";
 import { init } from "@thetsf/geofirex";
 
 const geo = init(app);
@@ -11,11 +11,13 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [images, setImages] = useState([]);
+  const [imageFiles, setImagesFiles] = useState([]);
+  //   const [imgUrl, setImgUrl] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   function generateRandomId() {
-    return 'id-' + Math.random().toString(36).substr(2, 9);
+    return "id-" + Math.random().toString(36).substr(2, 9);
   }
-  
 
   const submitEstablishment = async (review) => {
     try {
@@ -30,26 +32,102 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
         name: review.name,
         type: review.type,
       });
-    }catch (error){
+    } catch (error) {
       console.log(error);
     }
   };
 
+  async function uploadImage(image) {
+    if (image) {
+      // Return a Promise to ensure async/await works correctly
+      return new Promise((resolve, reject) => {
+        const uploadTask = storage.ref(`review-post/${image.name}`).put(image);
+        console.log("Uploading", image);
+
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            // Progress function (optional to show progress)
+            const progress = Math.round(
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            );
+            // You can use this to update a progress bar or show the upload status
+          },
+          (error) => {
+            // Error function
+            console.log(error);
+            reject(error); // Reject the promise on error
+          },
+          () => {
+            // Complete function
+            uploadTask.snapshot.ref
+              .getDownloadURL()
+              .then((url) => {
+                console.log("File available at", url);
+                resolve(url); // Resolve the promise with the URL
+              })
+              .catch((error) => {
+                reject(error); // Reject if getDownloadURL fails
+              });
+          }
+        );
+      });
+    }
+  }
+
   const submitReview = async (review) => {
     try {
+      // Log the image files to check they are being passed correctly
+      console.log("Image files: ", imageFiles);
+
+      // Create an array of promises for image uploads
+      const uploadPromises = imageFiles.map(async (img) => {
+        try {
+          // Log the image being uploaded
+          console.log("Uploading image: ", img);
+
+          // Upload the image and get the URL
+          const imgUrl = await uploadImage(img);
+
+          // Log the URL returned by the upload
+          console.log("Uploaded image URL: ", imgUrl);
+
+          // Return the image URL to be collected in the Promise.all() array
+          return imgUrl;
+        } catch (err) {
+          console.error("Error uploading image: ", err);
+          throw new Error("Image upload failed");
+        }
+      });
+
+      // Wait for all images to be uploaded and get the array of URLs
+      const imgUrls = await Promise.all(uploadPromises);
+
+      // Log the image URLs array
+      console.log("All image URLs: ", imgUrls);
+
+      // Proceed to add the review to the database
       const docRef = await addDoc(collection(db, "reviews"), {
-        id: review.id,
+        id: target.id,
         name: user.name,
         uid: user.uid,
         comment: review.comment,
         rating: review.rating,
+        images: imgUrls, // Use the image URLs returned from uploads
       });
-    }catch (error){
-      console.log(error);
+
+      console.log("Review submitted with ID: ", docRef.id);
+      setName("");
+      setType("");
+      setRating(0);
+      setComment("");
+      setImages([]);
+      setImagesFiles([]);
+      setUploading(false);
+    } catch (error) {
+      console.error("Error submitting review: ", error);
     }
   };
-
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -68,6 +146,7 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
     }
     const newImages = files.map((file) => URL.createObjectURL(file));
     setImages([...images, ...newImages]);
+    setImagesFiles([...imageFiles, ...files]);
   };
 
   const removeImage = (index) => {
@@ -158,9 +237,47 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded mb-4"
+            className="w-full bg-blue-500 text-white p-2 rounded mb-4 flex justify-center items-center"
           >
-            Submit
+            {uploading ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="xMidYMid"
+                style={{
+                  shapeRendering: "auto",
+                  display: "block",
+                  background: "transparent",
+                }}
+                width="40px"
+                height="40px"
+              >
+                <g>
+                  <circle
+                    stroke-linecap="round"
+                    fill="none"
+                    stroke-dasharray="50.26548245743669 50.26548245743669"
+                    stroke="#fff"
+                    stroke-width="8"
+                    r="32"
+                    cy="50"
+                    cx="50"
+                  >
+                    <animateTransform
+                      values="0 50 50;360 50 50"
+                      keyTimes="0;1"
+                      dur="1s"
+                      repeatCount="indefinite"
+                      type="rotate"
+                      attributeName="transform"
+                    ></animateTransform>
+                  </circle>
+                  <g></g>
+                </g>
+              </svg>
+            ) : (
+              "Submit"
+            )}
           </button>
         </form>
         <button

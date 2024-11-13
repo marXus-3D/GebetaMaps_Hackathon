@@ -67,7 +67,7 @@ function SidePanel({ map, target }) {
       }
     };
 
-    if (target && target.id) {
+    if (target) {
       console.log("this the target", target);
       setIsReviewLoading(true);
       setActiveTab("reviews");
@@ -75,6 +75,7 @@ function SidePanel({ map, target }) {
       // return () => unsubscribe();
     } else {
       setActiveTab("places");
+      setReviews([]);
     }
   }, [target]);
 
@@ -373,6 +374,17 @@ function SidePanel({ map, target }) {
               <p className="text-sm text-gray-600">User: {review.name}</p>
               <p className="text-sm text-blue-600">Rating: {review.rating}/5</p>
               <p className="text-sm mt-1">{review.comment}</p>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+            {review.images.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Uploaded ${index + 1}`}
+                  className="w-full h-24 object-cover rounded"
+                />
+              </div>
+            ))}
+          </div>
             </li>
           ))
         );

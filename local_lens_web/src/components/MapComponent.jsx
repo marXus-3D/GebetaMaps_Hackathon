@@ -10,7 +10,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import app, { db } from "../firebase-config";
-import { collection } from "firebase/firestore";
+import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import { init } from "@thetsf/geofirex";
 
 const geo = init(app);
@@ -53,20 +53,35 @@ const MapComponent = ({ addEstablishment, target, map, setMap, addReview }) => {
   }, []);
   useEffect(() => {
     const getLocationFromFirebase = async () => {
-      db.collection("locations")
-        .get()
-        .then((querySnapshot) => {
-          querySnapshot.forEach((doc) => {
-            console.log(doc.id, "=>", doc.data());
-            setMarkers([...markers, doc.data()]);
-          });
-        })
-        .catch((error) => {
-          console.error("Error getting documents: ", error);
+      try {
+        const q = query(collection(db, "locations"), limit(10));
+
+        const snapshots = await getDocs(q);
+        snapshots.forEach((doc) => {
+          // doc.data() is never undefined for query doc snapshots
+          console.log(doc.id, " => ", doc.data());
+          markers.push(doc.data());
         });
+      } catch (error) {
+        console.log(error);
+      }
+
+      // db.collection("locations")
+      //   .get()
+      //   .then((querySnapshot) => {
+      //     querySnapshot.forEach((doc) => {
+      //       console.log(doc.id, "=>", doc.data());
+      //       setMarkers([...markers, doc.data()]);
+      //     });
+      //   })
+      //   .catch((error) => {
+      //     console.error("Error getting documents: ", error);
+      //   });
     };
 
-    getLocationFromFirebase();
+    getLocationFromFirebase().then(() => {
+      setMarkers(markers);
+    });
   }, []);
 
   // useEffect(() => {
@@ -205,25 +220,35 @@ const MapComponent = ({ addEstablishment, target, map, setMap, addReview }) => {
             icon={ico}
             title="Current Location"
           >
-            {markers.map((marker, idx) => (
-              <Marker
-                position={[marker.latitude, marker.longitude]}
-                icon={ico}
-                title={marker.name}
-                eventHandlers={ {click: (e) => {
-                  target({lat: marker.latitude, lng: marker.longitude, name: marker.name, type: marker.type, id: marker.id});
-                  addReview(true);
-                }}}
-                key={idx}
-              >
-                <Popup>
-                  <div className="flex flex-col">
-                    <h4>{marker.name}</h4>
-                    <p>{marker.type}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {markers.map((marker, idx) => {
+              return (
+                <Marker
+                  position={[marker.latitude, marker.longitude]}
+                  icon={ico}
+                  title={marker.name}
+                  eventHandlers={{
+                    click: (e) => {
+                      target({
+                        lat: marker.latitude,
+                        lng: marker.longitude,
+                        name: marker.name,
+                        type: marker.type,
+                        id: marker.id,
+                      });
+                      addReview(true);
+                    },
+                  }}
+                  key={idx}
+                >
+                  <Popup>
+                    <div className="flex flex-col">
+                      <h4>{marker.name}</h4>
+                      <p>{marker.type}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
             <Popup>Current Location</Popup>
           </Marker>
         </MapContainer>
