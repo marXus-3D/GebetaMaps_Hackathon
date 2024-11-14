@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import { db } from "../firebase-config";
 
 function SidePanel({ map, target }) {
@@ -62,7 +62,7 @@ function SidePanel({ map, target }) {
         });
       } catch (error) {
         console.log(error);
-      }finally{
+      } finally {
         setIsReviewLoading(false);
       }
     };
@@ -122,6 +122,16 @@ function SidePanel({ map, target }) {
     } catch (error) {
       console.error("Error:", error);
     }
+  };
+
+  const fetchNearbyPlaces = async (term) => {
+    // const q = query(collection(db, "locations"), limit(50));
+
+    // const snapshots = await getDocs(q);
+    // snapshots.forEach((doc) => {
+    //   // doc.data() is never undefined for query doc snapshots
+    //   console.log("Name of loc", doc.id, " => ", doc.data());
+    // });
   };
 
   const renderPlaces = (places) => {
@@ -284,6 +294,7 @@ function SidePanel({ map, target }) {
 
   const handleSearchChange = (e) => {
     fetchGebetaPlaces(e.target.value);
+    fetchNearbyPlaces(e.target.value);
     setSearchTerm(e.target.value);
     setShowSearchResults(e.target.value.length > 0);
   };
@@ -375,16 +386,16 @@ function SidePanel({ map, target }) {
               <p className="text-sm text-blue-600">Rating: {review.rating}/5</p>
               <p className="text-sm mt-1">{review.comment}</p>
               <div className="grid grid-cols-3 gap-2 mb-4">
-            {review.images.map((image, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={image}
-                  alt={`Uploaded ${index + 1}`}
-                  className="w-full h-24 object-cover rounded"
-                />
+                {review.images.map((image, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={image}
+                      alt={`Uploaded ${index + 1}`}
+                      className="w-full h-24 object-cover rounded"
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
             </li>
           ))
         );

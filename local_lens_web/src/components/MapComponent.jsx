@@ -54,7 +54,7 @@ const MapComponent = ({ addEstablishment, target, map, setMap, addReview }) => {
   useEffect(() => {
     const getLocationFromFirebase = async () => {
       try {
-        const q = query(collection(db, "locations"), limit(10));
+        const q = query(collection(db, "locations"), limit(50));
 
         const snapshots = await getDocs(q);
         snapshots.forEach((doc) => {
