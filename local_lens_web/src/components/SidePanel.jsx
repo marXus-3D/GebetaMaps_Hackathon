@@ -122,8 +122,7 @@ function SidePanel({ map, target, places }) {
   }, []);
 
   useEffect(() => {
-    if (places)
-        setLocaions(new Set(places));
+    if (places) setLocaions(new Set(places));
   }, [places]);
 
   // useEffect(() => {
@@ -377,19 +376,52 @@ function SidePanel({ map, target, places }) {
     { name: "Emily Brown", distance: "1.4 km" },
   ];
 
-  const placeholderEvents = [
-    { name: "Local Concert", distance: "0.5 km", date: "2024-11-15" },
-    { name: "Art Exhibition", distance: "0.9 km", date: "2024-11-20" },
-    { name: "Food Festival", distance: "1.3 km", date: "2024-11-25" },
-    { name: "Charity Run", distance: "1.8 km", date: "2024-11-30" },
-  ];
+  async function navigateToEvent(term) {
+    console.log("Trying");
+    try {
+      const response = await fetch(
+        `https://mapapi.gebeta.app/api/v1/route/geocoding?name=${term}&apiKey=${process.env.REACT_APP_TOKEN}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("Fetched all data");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json().then((data) => {
+        map.setView([data.data[0].latitude, data.data[0].longitude], 20, {
+          animate: true,
+          duration: 2,
+        });
+      });
+
+      console.log("Success:", data);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
 
   const renderContent = () => {
     switch (activeTab) {
       case "places":
         return Array.from(locations).map((place, index) => {
           return (
-            <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
+            <li
+              key={index}
+              className="mb-2 p-2 bg-gray-100 rounded cursor-pointer hover:bg-gray-300 transition-colors"
+              onClick={() =>
+                map.setView([place.latitude, place.longitude], 20, {
+                  animate: true,
+                  duration: 2,
+                })
+              }
+            >
               <p className="font-semibold">{place.name}</p>
               <p className="text-sm text-gray-600">Distance: {place.type}</p>
             </li>
@@ -416,7 +448,13 @@ function SidePanel({ map, target, places }) {
               </p>
               <p className="text-sm text-gray-600">Time: {event.time}</p>
               <p className="text-sm text-gray-600">
-                Location: {event.location}
+                Location:{" "}
+                <span
+                  className="font-bold cursor-pointer text-blue-600"
+                  onClick={() => navigateToEvent(event.location)}
+                >
+                  {event.location}
+                </span>
               </p>
             </li>
           ))
