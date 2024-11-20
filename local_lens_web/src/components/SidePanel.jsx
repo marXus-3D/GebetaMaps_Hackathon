@@ -125,47 +125,11 @@ function SidePanel({ map, target, places }) {
     if (places) setLocaions(new Set(places));
   }, [places]);
 
-  // useEffect(() => {
-  //   const fetchRecentDocuments = async () => {
-  //     try {
-  //       const today = new Date();
-  //       const sevenDaysAgo = addDays(today, -7);
-
-  //       const q = query(
-  //         collection(db, "documents"),
-  //         where("createdAt", ">", sevenDaysAgo)
-  //       );
-
-  //       const snapshots = await getDocs(q);
-  //       const recentDocuments = snapshots.docs.map(doc => ({
-  //         id: doc.id,
-  //         ...doc.data()
-  //       }));
-  //       console.log(recentDocuments);
-  //     } catch (error) {
-  //       console.error("Error fetching recent documents:", error);
-  //     }
-  //   };
-
-  //   fetchRecentDocuments();
-  // }, []);
-
-  const placeholderPlaces = [
-    { name: "Coffee Shop", distance: "0.2 km", reviewed: true, rating: 4.5 },
-    { name: "Park", distance: "0.5 km", reviewed: false },
-    { name: "Grocery Store", distance: "0.8 km", reviewed: true, rating: 3.8 },
-    { name: "Restaurant", distance: "1.2 km", reviewed: true, rating: 4.2 },
-    { name: "Gym", distance: "1.5 km", reviewed: false },
-    { name: "Bookstore", distance: "0.7 km", reviewed: true, rating: 4.0 },
-    { name: "Cinema", distance: "2.0 km", reviewed: false },
-    { name: "Bakery", distance: "0.3 km", reviewed: true, rating: 4.7 },
-  ];
-
-  const filteredPlaces = placeholderPlaces.filter((place) =>
+  const filteredPlaces = places.filter((place) =>
     place.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const reviewedPlaces = filteredPlaces.filter((place) => place.reviewed);
+  const reviewedPlaces = filteredPlaces.filter((places) => places.reviewed);
   const unreviewedPlaces = filteredPlaces.filter((place) => !place.reviewed);
 
   const fetchGebetaPlaces = async (term) => {
@@ -208,7 +172,7 @@ function SidePanel({ map, target, places }) {
     return places.map((place, index) => (
       <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
         <p className="font-semibold">{place.name}</p>
-        <p className="text-sm text-gray-600">Distance: {place.distance}</p>
+        <p className="text-sm text-gray-600">Type: {place.type}</p>
         {place.reviewed && (
           <p className="text-sm text-blue-600">Rating: {place.rating}</p>
         )}
@@ -422,8 +386,8 @@ function SidePanel({ map, target, places }) {
                 })
               }
             >
-              <p className="font-semibold">{place.name}</p>
-              <p className="text-sm text-gray-600">Distance: {place.type}</p>
+              <p className="font-bold">{place.name}</p>
+              <p className="text-sm text-gray-600">Type: {place.type}</p>
             </li>
           );
         });
@@ -543,7 +507,7 @@ function SidePanel({ map, target, places }) {
           <div className="absolute top-16 left-0 right-0 bg-white border rounded shadow-lg z-10 max-h-96 overflow-y-auto">
             <div className="p-4">
               <h3 className="text-lg font-bold mb-2">Reviewed Places</h3>
-              <ul className="mb-4">{renderPlaces(reviewedPlaces)}</ul>
+              <ul className="mb-4">{renderPlaces(filteredPlaces)}</ul>
               <h3 className="text-lg font-bold mb-2">Unreviewed Places</h3>
               <ul>{renderUnreviewed(nearbyGebetaSearch)}</ul>
             </div>
