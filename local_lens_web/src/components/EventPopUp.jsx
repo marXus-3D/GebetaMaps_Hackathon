@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../firebase-config';
 
-function EventPopup({ isOpen, onClose }) {
+function EventPopup({ isOpen, onClose, user }) {
     const [eventName, setEventName] = useState('');
     const [eventDate, setEventDate] = useState('');
     const [eventTime, setEventTime] = useState('');
     const [eventLocation, setEventLocation] = useState('');
   
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
+      const docRef = await addDoc(collection(db, "events"), {
+        id: generateRandomId(),
+        name: eventName,
+        uid: user.uid,
+        date: new Date(eventDate + 'T' + eventTime),
+        location: eventLocation,
+        time: eventTime,
+      });
       console.log('Event submitted:', { eventName, eventDate, eventTime, eventLocation });
       onClose();
     };
+
+    function generateRandomId() {
+      return "ev-" + Math.random().toString(36).substr(2, 9);
+    }
   
     if (!isOpen) return null;
   

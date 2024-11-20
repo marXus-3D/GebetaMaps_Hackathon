@@ -23,8 +23,17 @@ const ico = L.divIcon({
   iconSize: [32, 32],
   iconAnchor: [16, 16],
 });
+const icoM = L.icon({
+  iconUrl: 'https://i.imgur.com/v1vQwWG.png',
+  // className: "cutomMark",
+  // html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+  //                 <path d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 128a64 64 0 1 1 0 128 64 64 0 1 1 0-128z" />
+  //               </svg>`,
+  iconSize: [32, 32],
+  iconAnchor: [20,20],
+});
 
-const MapComponent = ({ addEstablishment, target, map, setMap, addReview }) => {
+const MapComponent = ({ addEstablishment, target, map, setMap, addReview, places }) => {
   const [currentPosition, setCurrentLocation] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [locationError, setLocationError] = useState(null);
@@ -81,6 +90,7 @@ const MapComponent = ({ addEstablishment, target, map, setMap, addReview }) => {
 
     getLocationFromFirebase().then(() => {
       setMarkers(markers);
+      places(markers);
     });
   }, []);
 
@@ -224,7 +234,7 @@ const MapComponent = ({ addEstablishment, target, map, setMap, addReview }) => {
               return (
                 <Marker
                   position={[marker.latitude, marker.longitude]}
-                  icon={ico}
+                  icon={icoM}
                   title={marker.name}
                   eventHandlers={{
                     click: (e) => {

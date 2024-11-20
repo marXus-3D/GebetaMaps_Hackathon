@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where, limit } from "firebase/firestore";
-import { db } from "../firebase-config";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  limit,
+  Timestamp,
+} from "firebase/firestore";
+import app, { db } from "../firebase-config";
 
-function SidePanel({ map, target }) {
+function SidePanel({ map, target, places }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("places");
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -13,6 +20,7 @@ function SidePanel({ map, target }) {
   const [navigateCoord, setNavigateCoor] = useState();
   const [reviews, setReviews] = useState([]);
   const [isReviewLoading, setIsReviewLoading] = useState(true);
+  const [locations, setLocaions] = useState([]);
   // const placeholderReviews = [
   //   {
   //     place: "Coffee Shop",
@@ -46,6 +54,8 @@ function SidePanel({ map, target }) {
   //   },
   // ];
 
+  const [events, setEvents] = useState([]);
+
   useEffect(() => {
     const unsubscribe = async () => {
       try {
@@ -78,6 +88,68 @@ function SidePanel({ map, target }) {
       setReviews([]);
     }
   }, [target]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const today = new Date();
+        // const sevenDaysAgo = addDays(today, 7);
+
+        // const seven = Timestamp.fromDate((today + 5));
+
+        // console.log("DateDifff", seven);
+        const q = query(
+          collection(db, "events"),
+          where("date", ">", today),
+          limit(50)
+        );
+        const snapshots = await getDocs(q);
+        const arr = [];
+        const eventsData = snapshots.docs.map((doc) => {
+          arr.push(doc.data());
+          return {
+            id: doc.id,
+            ...doc.data(),
+          };
+        });
+        setEvents(arr);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    if (places)
+        setLocaions(new Set(places));
+  }, [places]);
+
+  // useEffect(() => {
+  //   const fetchRecentDocuments = async () => {
+  //     try {
+  //       const today = new Date();
+  //       const sevenDaysAgo = addDays(today, -7);
+
+  //       const q = query(
+  //         collection(db, "documents"),
+  //         where("createdAt", ">", sevenDaysAgo)
+  //       );
+
+  //       const snapshots = await getDocs(q);
+  //       const recentDocuments = snapshots.docs.map(doc => ({
+  //         id: doc.id,
+  //         ...doc.data()
+  //       }));
+  //       console.log(recentDocuments);
+  //     } catch (error) {
+  //       console.error("Error fetching recent documents:", error);
+  //     }
+  //   };
+
+  //   fetchRecentDocuments();
+  // }, []);
 
   const placeholderPlaces = [
     { name: "Coffee Shop", distance: "0.2 km", reviewed: true, rating: 4.5 },
@@ -126,7 +198,6 @@ function SidePanel({ map, target }) {
 
   const fetchNearbyPlaces = async (term) => {
     // const q = query(collection(db, "locations"), limit(50));
-
     // const snapshots = await getDocs(q);
     // snapshots.forEach((doc) => {
     //   // doc.data() is never undefined for query doc snapshots
@@ -316,12 +387,14 @@ function SidePanel({ map, target }) {
   const renderContent = () => {
     switch (activeTab) {
       case "places":
-        return placeholderPlaces.map((place, index) => (
-          <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
-            <p className="font-semibold">{place.name}</p>
-            <p className="text-sm text-gray-600">Distance: {place.distance}</p>
-          </li>
-        ));
+        return Array.from(locations).map((place, index) => {
+          return (
+            <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
+              <p className="font-semibold">{place.name}</p>
+              <p className="text-sm text-gray-600">Distance: {place.type}</p>
+            </li>
+          );
+        });
       case "people":
         return placeholderPeople.map((person, index) => (
           <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
@@ -330,13 +403,24 @@ function SidePanel({ map, target }) {
           </li>
         ));
       case "events":
-        return placeholderEvents.map((event, index) => (
-          <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
-            <p className="font-semibold">{event.name}</p>
-            <p className="text-sm text-gray-600">Distance: {event.distance}</p>
-            <p className="text-sm text-gray-600">Date: {event.date}</p>
+        return events.length < 1 ? (
+          <li>
+            There are no Events in the Near Future. Why don't you add your own
           </li>
-        ));
+        ) : (
+          events.map((event, index) => (
+            <li key={index} className="mb-2 p-2 bg-gray-100 rounded">
+              <p className="font-semibold">{event.name}</p>
+              <p className="text-sm text-gray-600">
+                Date: {event.date.toDate().toLocaleDateString()}
+              </p>
+              <p className="text-sm text-gray-600">Time: {event.time}</p>
+              <p className="text-sm text-gray-600">
+                Location: {event.location}
+              </p>
+            </li>
+          ))
+        );
       case "reviews":
         return isReviewLoading ? (
           <svg
