@@ -16,6 +16,8 @@ import Drawer from "./components/Drawer";
 import ReviewPopUp from "./components/ReviewPopUp";
 import EventPopup from "./components/EventPopUp";
 
+import google from "./assets/google.svg";
+
 const provider = new GoogleAuthProvider();
 
 // Set a default position (latitude, longitude)
@@ -107,7 +109,7 @@ function AuthPopup({ onClose, setUser }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur z-50">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96 transition-all">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96 transition-all flex flex-col">
         <h2 className="text-2xl font-bold mb-4">
           {isSignUp ? "Sign Up" : "Sign In"}
         </h2>
@@ -146,13 +148,13 @@ function AuthPopup({ onClose, setUser }) {
           </button>
         </form>
         <button
-          className="w-full bg-red-500 text-white p-2 rounded mb-4"
+          className="w-full text-white bg-transparent rounded mb-4 max-w-16 aspect-square border-2 border-grey-500 shadow-lg self-center justify-self-center"
           onClick={() => {
             signInByGoogle();
             onClose();
           }}
         >
-          Sign in with Google
+          <img src={google} alt="Google" />
         </button>
         <p className="text-center">
           {isSignUp ? "Already have an account?" : "Don't have an account?"}
@@ -317,7 +319,7 @@ function App() {
             onClose={() => setIsEventPopupOpen(false)}
             user={userDetail}
           />
-          <SidePanel map={map} target={target} places={places}/>
+          <SidePanel map={map} target={target} places={places} />
           {/* map.setView([ 9.03, 38.74], 20, { animate: true, duration: 2}); */}
           {!isAuthenticated && (
             <AuthPopup
