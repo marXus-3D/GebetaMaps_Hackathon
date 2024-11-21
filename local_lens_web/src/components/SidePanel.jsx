@@ -122,10 +122,15 @@ function SidePanel({ map, target, places }) {
   }, []);
 
   useEffect(() => {
-    if (places) setLocaions(new Set(places));
+    // if (places) setLocaions(new Set(places));
+    const locs = places.filter(
+      (place, index, self) =>
+        index === self.findIndex((p) => p.name === place.name)
+    );
+    setLocaions(locs);
   }, [places]);
 
-  const filteredPlaces = places.filter((place) =>
+  const filteredPlaces = Array.from(locations).filter((place) =>
     place.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -375,7 +380,6 @@ function SidePanel({ map, target, places }) {
     switch (activeTab) {
       case "places":
         return Array.from(locations).map((place, index) => {
-          if (index > (places.length-1) / 2) return <></>;
           return (
             <li
               key={index}
