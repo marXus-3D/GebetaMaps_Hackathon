@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import app, { db, storage } from "../firebase-config";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 
 function ReviewPopUp({ isOpen, onClose, target, user }) {
   const [name, setName] = useState(target != null ? target.name : "");
@@ -141,15 +141,30 @@ function ReviewPopUp({ isOpen, onClose, target, user }) {
         images: imgUrls, // Use the image URLs returned from uploads
       });
 
+      const reviewDocRef = doc(db, "locations", target.id);
+      const reviewDoc = await getDoc(reviewDocRef);
+      
+      if (reviewDoc.exists) {
+        console.log("Review data:", reviewDoc.data());
+      } else {
+        console.log("No such document!");
+      }
+
+      await updateDoc(reviewDocRef, {
+        reviews: reviewDoc.data().reviews + 1,
+        rating:
+          (reviewDoc.data().rating * reviewDoc.data().reviews + review.rating) /
+          (reviewDoc.data().reviews + 1),
+      });
+
       console.log("Review submitted with ID: ", docRef.id);
-      setName('');
-      setType('');
+      setName("");
+      setType("");
       setRating(0);
       setComment("");
       setImages([]);
       setImagesFiles([]);
       setUploading(false);
-
     } catch (error) {
       console.error("Error submitting review: ", error);
     }

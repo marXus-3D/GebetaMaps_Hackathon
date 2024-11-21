@@ -58,6 +58,7 @@ function SidePanel({ map, target, places }) {
 
   useEffect(() => {
     const unsubscribe = async () => {
+      const reviewList = []; 
       try {
         const q = query(
           collection(db, "reviews"),
@@ -67,13 +68,15 @@ function SidePanel({ map, target, places }) {
         const snapshots = await getDocs(q);
         snapshots.forEach((doc) => {
           // doc.data() is never undefined for query doc snapshots
-          console.log(doc.id, " => ", doc.data());
-          setReviews([...reviews, doc.data()]);
+          console.log("These are the reviews " + doc.id, " => ", doc.data());
+           
+          reviewList.push(doc.data());
         });
       } catch (error) {
         console.log(error);
       } finally {
         setIsReviewLoading(false);
+        setReviews(reviewList);
       }
     };
 
@@ -81,6 +84,7 @@ function SidePanel({ map, target, places }) {
       console.log("this the target", target);
       setIsReviewLoading(true);
       setActiveTab("reviews");
+      // unsubscribe().then(val => setReviews(val));
       unsubscribe();
       // return () => unsubscribe();
     } else {
@@ -393,6 +397,7 @@ function SidePanel({ map, target, places }) {
             >
               <p className="font-bold">{place.name}</p>
               <p className="text-sm text-gray-600">Type: {place.type}</p>
+              <p className="text-sm text-gray-600">Rating: {place.rating}★</p>
             </li>
           );
         });

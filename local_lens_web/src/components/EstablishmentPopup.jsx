@@ -1,6 +1,6 @@
 import { useState } from "react";
 import app, { db, storage } from "../firebase-config";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, setDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { init } from "@thetsf/geofirex";
 
 const geo = init(app);
@@ -24,13 +24,15 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
       // const geohash = geofirex.geohashForLocation(new geofirex.GeoPoint(target.lat, target.lon));
       console.log("target", target);
       const geohash = geo.point(target.lat, target.lng);
-      const docRef = await addDoc(collection(db, "locations"), {
+      const docRef = await setDoc(doc(db, "locations", review.id), {
         geohash,
         id: review.id,
         latitude: target.lat,
         longitude: target.lng,
         name: review.name,
         type: review.type,
+        reviews: 0,
+        rating: 0.0,
       });
     } catch (error) {
       console.log(error);
@@ -108,12 +110,28 @@ function EstablishmentPopup({ isOpen, onClose, target, user }) {
 
       // Proceed to add the review to the database
       const docRef = await addDoc(collection(db, "reviews"), {
-        id: target.id,
+        id: review.id,
         name: user.name,
         uid: user.uid,
         comment: review.comment,
         rating: review.rating,
         images: imgUrls, // Use the image URLs returned from uploads
+      });
+
+      const reviewDocRef = doc(db, "locations", review.id);
+      const reviewDoc = await getDoc(reviewDocRef);
+
+      if (reviewDoc.exists) {
+        console.log("Review data:", reviewDoc.data());
+      } else {
+        console.log("No such document!");
+      }
+
+      await updateDoc(reviewDocRef, {
+        reviews: reviewDoc.data().reviews + 1,
+        rating:
+          (reviewDoc.data().rating * reviewDoc.data().reviews + review.rating) /
+          (reviewDoc.data().reviews + 1),
       });
 
       console.log("Review submitted with ID: ", docRef.id);
