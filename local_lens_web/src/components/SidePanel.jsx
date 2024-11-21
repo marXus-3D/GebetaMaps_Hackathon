@@ -375,6 +375,7 @@ function SidePanel({ map, target, places }) {
     switch (activeTab) {
       case "places":
         return Array.from(locations).map((place, index) => {
+          if (index > (places.length-1) / 2) return <></>;
           return (
             <li
               key={index}
